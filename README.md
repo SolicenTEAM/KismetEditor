@@ -10,6 +10,14 @@ This a script/tool to extract strings from assets file `.uasset` or `.uexp` from
 ## Using:
 * Or [download](https://github.com/SolicenTEAM/KismetEditor/releases) and **drag & drop** file and `.csv` to a command tool.
 * Or use `KismetEditor.exe <file_path>`.
+### Extract strings:
+```
+KismetEditor.exe <file_path> <output_csv> --extract
+```
+### Replace strings:
+``` 
+KismetEditor.exe <file_path> <input_csv> 
+```
 
 ### KismetEditor
 * You can simply drag and drop directory with Unreal resources onto `KismetEditor.exe` to parse file and replace strings into it. 
