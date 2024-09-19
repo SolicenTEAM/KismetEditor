@@ -11,11 +11,11 @@ This a script/tool to extract strings from assets file `.uasset` from the [Unrea
 * Or [download](https://github.com/SolicenTEAM/KismetEditor/releases) and **drag & drop** file and `.csv` to a command tool.
 * Or use `KismetEditor.exe <file_path>`.
 ### Extract strings:
-```
+```cmd
 KismetEditor.exe <file_path> <output_csv> --extract
 ```
 ### Replace strings:
-``` 
+```cmd 
 KismetEditor.exe <file_path> <input_csv> 
 ```
 
