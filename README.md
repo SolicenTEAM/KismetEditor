@@ -12,7 +12,7 @@ This a script/tool to replace and extract (EX_StringConst) from the [Unreal Enig
 * Or use `KismetEditor.exe <file_path>`.
 
 ### KismetEditor
-* You can simply **drag & drop** `.uasset` and `.csv` onto `KismetEditor.exe` to parse and replace (EX_StringConst) into it. 
+* You can simply **drag & drop** `.uasset` and `.csv` onto `KismetEditor.exe` to replace (EX_StringConst). 
 * Or use more advanced options with CMD.
 
 #### Extract strings:
