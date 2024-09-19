@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Solicen.Kismet;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -19,14 +20,13 @@ namespace KismetEditor
             Stopwatch stopwatch = new Stopwatch(); stopwatch.Start();
             TimeSpan timeTaken = new TimeSpan();
 
-            string assetPath = "UI_Tooltip.uasset";
+            var backgroundThread = new Thread(() =>
+            {
+                KismetProcessor.ProcessProgram(args);
+                stopwatch.Stop(); timeTaken = stopwatch.Elapsed;
+            });
 
-            //Solicen.Kismet.BytecodeModifier.WriteStringsFile(assetPath); // Для извлечения уникальных строк
-
-            var replacement = Solicen.Kismet.BytecodeModifier.TranslateFromCSV("UI_Tooltip_strings.csv");
-            Solicen.Kismet.BytecodeModifier.ModifyAsset(assetPath, replacement);
-
-            stopwatch.Stop(); timeTaken = stopwatch.Elapsed; GC.Collect();
+            backgroundThread.Start(); backgroundThread.Join(); GC.Collect();
             Console.WriteLine($"Operation completed in: {(int)timeTaken.TotalSeconds} seconds.");
             Console.ReadLine();
         }

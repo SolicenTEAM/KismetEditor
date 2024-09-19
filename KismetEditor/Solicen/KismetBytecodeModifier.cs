@@ -1,11 +1,6 @@
-﻿using System;
-using UAssetAPI;
-using System.IO;
+﻿using System;using UAssetAPI;using System.IO;using Newtonsoft.Json.Linq;
+using System.Linq;using System.Collections.Generic;
 
-using static Solicen.Kismet.KismetExtension;
-using Newtonsoft.Json.Linq;
-using System.Linq;
-using System.Collections.Generic;
 namespace Solicen.Kismet
 {
     class BytecodeModifier
@@ -18,8 +13,8 @@ namespace Solicen.Kismet
             var lines = File.ReadAllLines(filepath);
             foreach(var l in lines)
             {
-                if ("Original | Translation" == l) continue;
-                if (l.StartsWith("//")) continue;
+                if ("Original | Translation" == l) continue; // Если строка это заголовок
+                if (l.StartsWith("//")) continue; // Если строка начинается с символов комментирования - пропустить
                 var values = l.Split('|');
                 var key = values[0].Trim();
                 var value = values[1].Trim();
@@ -29,14 +24,15 @@ namespace Solicen.Kismet
             return csvValues;
         }
 
-        public static void WriteStringsFile(string assetPath)
+        public static void ExtractAndWriteCSV(string assetPath, string _fileName = "")
         {
             UAsset asset = new UAsset(assetPath, Version);
             var json = asset.SerializeJson(Newtonsoft.Json.Formatting.Indented);
-            JObject jsonObject = JObject.Parse(json);
             var ubergraph = KismetExtension.GetUbergraphJson(UAsset.DeserializeJson(json));
             var strings = KismetObject.ToCSV(ubergraph);
-            File.WriteAllText($"{Environment.CurrentDirectory}\\{Path.GetFileNameWithoutExtension(assetPath)}_strings.csv", string.Join("\n", strings));
+            _fileName = _fileName == "" ? Path.GetFileNameWithoutExtension(assetPath) : _fileName;
+
+            File.WriteAllText($"{Environment.CurrentDirectory}\\{_fileName}.csv", string.Join("\n", strings));
         }
 
         public static void ModifyAsset(string path, Dictionary<string, string> replacement)
@@ -58,12 +54,14 @@ namespace Solicen.Kismet
             if (File.Exists(Path.ChangeExtension(path, "uexp"))) File.Copy(Path.ChangeExtension(path, "uexp"), Path.ChangeExtension(path, "uexp") + ".bak", true);
             UAsset.DeserializeJson(_json).Write(path);
 
+            #region Дебаг сегмент для создания Ubergraph текстового файла
             /*
             File.WriteAllText($"{Environment.CurrentDirectory}\\JsonModded.json", _json);
 
             var ubergraph = KismetExtension.GetUbergraphJson(UAsset.DeserializeJson(_json));
             File.WriteAllText($"{Environment.CurrentDirectory}\\JsonModdedUbergraph.json", ubergraph.ToString());
             */
+            #endregion
 
             Console.WriteLine($"Successfully modified [{kismet.ModifiedInst}] instructions.");
         }

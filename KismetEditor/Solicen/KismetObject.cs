@@ -46,11 +46,13 @@ namespace Solicen.Kismet
 
         public static string[] ToCSV(JArray JArray)
         {
+            Console.WriteLine("Extract strings");
             HashSet<string> values = new HashSet<string>();
             var kismet = FromJson(JArray, true).Select(x => x.Value).ToArray();
             values.Add("OriginalText | Translation");
             for (int i = 0; i < kismet.Length; i++)
             {
+                Console.WriteLine($"| {kismet[i]} |");
                 values.Add($"{kismet[i]} | ");
             }
             return values.ToArray();

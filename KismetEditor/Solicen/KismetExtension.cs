@@ -37,9 +37,7 @@ namespace Solicen.Kismet
 
         public static string FillString(string oldString)
         {
-            string s = ""; int length = oldString.Length;
-
-            // Заполнитель строки
+            string s = ""; // Заполнитель строки
             int all = (9 + 9 + (oldString.Length + 2))-7;
             Parallel.For(0, all, (i) =>
             {
@@ -149,8 +147,9 @@ namespace Solicen.Kismet
                             // Проходим по каждому элементу массива ScriptBytecode
                             for (int i = 0; i < scriptBytecodeArray.Count; i++)
                             {
-                                JObject script = (JObject)scriptBytecodeArray[i];
+                                JObject script     = (JObject)scriptBytecodeArray[i];
                                 JObject expression = (JObject)script["Expression"];
+
                                 if (expression != null)
                                 {
                                     try
@@ -162,6 +161,8 @@ namespace Solicen.Kismet
                                             Console.WriteLine($"| Old: {replaceFrom} | New: {replaceTo}"); ModifiedInst++;
                                             var oldInst = script;
                                             var indexInst = scriptBytecodeArray.IndexOf(oldInst);
+
+                                            // Удаляем старую инструкцию
                                             scriptBytecodeArray.Remove(oldInst);
 
                                             try
