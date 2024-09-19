@@ -5,7 +5,7 @@
 Thanks `Ambi` for idea and his research. <br>
 Made with ❤️ for **all** translators and translation developers.
 
-This a script/tool to replace `EX_StringConst` from `Unreal Engine kismet bytecode` in file `.uasset` from the [Unreal Enigne 4](https://www.unrealengine.com/). 
+This a script/tool to replace and extract (EX_StringConst) from the [Unreal Enigne](https://www.unrealengine.com/) kismet bytecode. 
 
 ## Using:
 * Or [download](https://github.com/SolicenTEAM/KismetEditor/releases) and **drag & drop** `.uasset` and `.csv` to a command tool.
