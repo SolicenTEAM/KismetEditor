@@ -1,20 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UAssetAPI.ExportTypes;
-using UAssetAPI.Kismet.Bytecode;
-using UAssetAPI.Kismet;
-using UAssetAPI;
-using Newtonsoft.Json.Linq;
-using System.Text.RegularExpressions;
+﻿// Выполнено Денисом Солиценом в 2024 году
+// : https://github.com/DenisSolicen
+// Техническая помощь с заполнителем строки ув. Ambi
+// Основано на UAssetAPI и ресурсах Unreal Engine 4
+
+using System;using System.Collections.Generic;using System.Linq;using System.Threading.Tasks;
+using UAssetAPI.ExportTypes;using UAssetAPI.Kismet.Bytecode;using UAssetAPI.Kismet;
+using UAssetAPI;using Newtonsoft.Json.Linq;using System.Text.RegularExpressions;
+
 namespace Solicen.Kismet
 {
     internal class KismetExtension
     {
+        internal const int MAGIC_TES = 200519; // | 20 | 05 | 19 | To   End Script 
+        internal const int MAGIC_FES = 060519; // | 06 | 05 | 19 | From End Script
+
+        public int ModifiedInst = 0;
+
         public JObject JsonObject;
-        public string Json = "";
+        public string Json => JsonObject.ToString();
         public KismetExtension(JObject json)
         {
             JsonObject = json; 
@@ -34,11 +37,10 @@ namespace Solicen.Kismet
 
         public static string FillString(string oldString)
         {
-            string s = ""; int lenght = oldString.Length;
+            string s = ""; int length = oldString.Length;
 
             // Заполнитель строки
             int all = (9 + 9 + (oldString.Length + 2))-7;
-
             Parallel.For(0, all, (i) =>
             {
                 if (i < 7) s += "a";
@@ -53,9 +55,10 @@ namespace Solicen.Kismet
             JObject jumpInstruction = new JObject
             {
                 { "$type", "UAssetAPI.Kismet.Bytecode.Expressions.EX_Jump, UAssetAPI" },
-                { "CodeOffset", 200519 }
-                // 20 | 05 | 19 | To End Script 
+                { "CodeOffset", MAGIC_TES }              
             };
+
+            // Инструкция с заполнителем
             JObject newInstruction = new JObject
             {
                 { "$type", "UAssetAPI.Kismet.Bytecode.Expressions.EX_StringConst, UAssetAPI" },
@@ -63,11 +66,8 @@ namespace Solicen.Kismet
             };
 
             JArray jsonArray = new JArray();
-            jsonArray.Add(newInstruction);
-            jsonArray.Add(jumpInstruction);
-
+            jsonArray.Add(newInstruction); jsonArray.Add(jumpInstruction);
             return jsonArray;
-
         }
 
         public static JArray ScriptBytecode(string json)
@@ -86,56 +86,60 @@ namespace Solicen.Kismet
             return bytecode;
         }
 
-        public static JObject ReplaceOffset(string json, int oldOffset, int newOffset)
+        /// <summary>
+        /// Заменяем напрямую смещения в JSON как текст, вместо изменения через NewToSoft.Json
+        /// </summary>
+        /// <param name="oldOffset">Старое смещение которое мы заменяем</param>
+        /// <param name="newOffset">Новое смещение на которое мы заменяем</param>
+        public void ReplaceOffset(int oldOffset, int newOffset)
         {
+            var json = Json.ToString();
             json = json.Replace($"\"CodeOffset\": {oldOffset}", $"\"CodeOffset\": {newOffset}");
-            return JObject.Parse(json);
+            JsonObject = JObject.Parse(json);
         }
 
-        public static JObject ReplaceAllInst(JObject jsonObject, Dictionary<string, string> replacement)
+        public void ReplaceAllInst(Dictionary<string, string> replacement)
         {
             foreach (var replace in replacement)
-            {
+            {             
                 var key   = replace.Key;    // ReplaceFrom
                 var value = replace.Value;  // ReplaceTo
 
-                int copyInst = Regex.Matches(jsonObject.ToString(), $"\"{key}\"").Count;
-                jsonObject = ReplaceInst(jsonObject, key, value);
+                // Подсчет количества копий инструкций
+                int InstCount = Regex.Matches(Json, $"\"{key}\"").Count;
 
-                var asset = UAsset.DeserializeJson(jsonObject.ToString());
+                // Непросредственно замена инструкции
+                this.ReplaceInst(key, value);
+
+                // Замена всего остального для работы
+                var asset = UAsset.DeserializeJson(Json);
                 var JObjectUbergraph = GetUbergraphJson(asset);
                 var kismetObject = KismetObject.FromJson(JObjectUbergraph);
-                var newToEnd = KismetObject.GetOffset(kismetObject, 200519);
-                var newFromEnd = KismetObject.GetOffset(kismetObject, 60519);
+                var newToEnd = KismetObject.GetOffset(kismetObject, MAGIC_TES);
+                var newFromEnd = KismetObject.GetOffset(kismetObject, MAGIC_FES);
 
-                jsonObject = KismetExtension.ReplaceOffset(jsonObject.ToString(), 200519, newFromEnd);
-                jsonObject = KismetExtension.ReplaceOffset(jsonObject.ToString(), 60519, newToEnd);
+                this.ReplaceOffset(MAGIC_TES, newFromEnd);
+                this.ReplaceOffset(MAGIC_FES, newToEnd);
 
-                for (int i = 0; i < copyInst-1; i++)
+                for (int i = 0; i < InstCount-1; i++)
                 {
-                    jsonObject = ReplaceAllInst(jsonObject, new Dictionary<string, string>()
+                    ReplaceAllInst(new Dictionary<string, string>()
                     {
                         {replace.Key, replace.Value},
                     });
                 }
             }
-            return jsonObject;
         }
 
-        public static JObject ReplaceInst(JObject jsonObject, string replaceFrom, string replaceTo)
+        public void ReplaceInst(string replaceFrom, string replaceTo)
         {
-            Console.WriteLine($"Find: {replaceFrom} | Replace: {replaceTo}");
-
             // Получаем массив "Exports"
-            JArray exportsArray = (JArray)jsonObject["Exports"];
+            JArray exportsArray = (JArray)JsonObject["Exports"];
             if (exportsArray != null && exportsArray.Count > 0)
             {
-                bool instIs = false;
                 foreach (var export in exportsArray)
-                {
-                    
+                {       
                     JObject exportObject = (JObject)export;
-
                     // Получаем массив "ScriptBytecode"
                     if ((JArray)exportObject["ScriptBytecode"] is JArray scriptBytecodeArray)
                     {
@@ -155,11 +159,10 @@ namespace Solicen.Kismet
                                         if (value == null) continue;
                                         if (value.ToString().Trim() == replaceFrom)
                                         {
-                                            Console.WriteLine($"Value: {value}");
+                                            Console.WriteLine($"| Old: {replaceFrom} | New: {replaceTo}"); ModifiedInst++;
                                             var oldInst = script;
                                             var indexInst = scriptBytecodeArray.IndexOf(oldInst);
                                             scriptBytecodeArray.Remove(oldInst);
-
 
                                             try
                                             {
@@ -170,24 +173,26 @@ namespace Solicen.Kismet
                                                 expression["$type"] = _type.Replace("EX_StringConst", "EX_UnicodeStringConst");
                                                 expression["Value"] = _value.Replace(replaceFrom, replaceTo);
                                             }
-                                            catch { }
+                                            catch
+                                            {
+                                                // Если какого-то значения выше нет
+                                                // то выбивает исключение и продолжает работу
+                                            }
 
-
-                                            // Новые инструкции на замену старой
+                                            // Две новые инструкции на замену старой
                                             var fillString = FillString(replaceFrom);
                                             var newInsts = JumpOffsetInstruction(fillString);
                                             foreach (JObject jobject in newInsts)
                                             {
                                                 scriptBytecodeArray.Insert(indexInst, jobject);
                                             }
+
                                             JObject jumpInstruction = new JObject {
                                             { "$type", "UAssetAPI.Kismet.Bytecode.Expressions.EX_Jump, UAssetAPI" },
-                                            { "CodeOffset", 60519 }
-                                        };
-                                            // 6 | 05 | 19 | FES = From End Script
+                                            { "CodeOffset", MAGIC_FES }};
+  
                                             scriptBytecodeArray.Add(oldInst);
                                             scriptBytecodeArray.Add(jumpInstruction);
-                                            instIs = true;
                                             break;
 
                                         }
@@ -211,11 +216,6 @@ namespace Solicen.Kismet
             {
                 Console.WriteLine("Exports не найден.");
             }
-
-            
-            return jsonObject;
-
-
         }
 
         public static KismetExpression[] GetUbergraph(UAsset asset)
@@ -223,7 +223,6 @@ namespace Solicen.Kismet
             var ubergraph = asset.Exports.FirstOrDefault(x => x.ObjectName.ToString().StartsWith("ExecuteUbergraph"));
             if (ubergraph != null)
             {
-                Console.WriteLine(ubergraph.ObjectName);
                 if (ubergraph is StructExport structExport)
                 {
                     KismetSerializer.asset = asset;

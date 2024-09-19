@@ -44,8 +44,14 @@ namespace Solicen.Kismet
             // Загружаем uasset файл с помощью UAssetAPI
             UAsset asset = new UAsset(path, Version);
             var json = asset.SerializeJson(Newtonsoft.Json.Formatting.Indented);
-            JObject jsonObject = JObject.Parse(json);       
-            jsonObject = KismetExtension.ReplaceAllInst(jsonObject, replacement);
+            JObject jsonObject = JObject.Parse(json);
+
+            var kismet = new KismetExtension(jsonObject);
+
+            Console.WriteLine("Replace string");
+            kismet.ReplaceAllInst(replacement);
+            jsonObject = kismet.JsonObject;
+
             var _json = jsonObject.ToString();
 
             if (File.Exists(path)) File.Copy(path, path + ".bak", true);
@@ -59,6 +65,7 @@ namespace Solicen.Kismet
             File.WriteAllText($"{Environment.CurrentDirectory}\\JsonModdedUbergraph.json", ubergraph.ToString());
             */
 
+            Console.WriteLine($"Successfully modified [{kismet.ModifiedInst}] instructions.");
         }
     }
 

@@ -54,7 +54,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="KismetBytecodeModifier.cs" />
+    <Compile Include="Solicen\KismetBytecodeModifier.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Solicen\KismetExtension.cs" />
