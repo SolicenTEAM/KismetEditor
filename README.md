@@ -5,14 +5,14 @@
 Thanks `Ambi` for idea and his research. <br>
 Made with ❤️ for **all** translators and translation developers.
 
-This a script/tool to extract strings from assets file `.uasset` from the [Unreal Enigne](https://www.unrealengine.com/). 
+This a script/tool to replace `EX_StringConst` from `Unreal Engine kismet bytecode` in file `.uasset` from the [Unreal Enigne 4](https://www.unrealengine.com/). 
 
 ## Using:
-* Or [download](https://github.com/SolicenTEAM/KismetEditor/releases) and **drag & drop** file and `.csv` to a command tool.
+* Or [download](https://github.com/SolicenTEAM/KismetEditor/releases) and **drag & drop** `.uasset` and `.csv` to a command tool.
 * Or use `KismetEditor.exe <file_path>`.
 
 ### KismetEditor
-* You can simply drag and drop directory with Unreal resources onto `KismetEditor.exe` to parse file and replace strings into it. 
+* You can simply **drag & drop** `.uasset` and `.csv` onto `KismetEditor.exe` to parse `.uasset` and replace strings into it. 
 * Or use more advanced options with CMD.
 
 #### Extract strings:
