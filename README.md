@@ -5,7 +5,7 @@
 Thanks `Ambi` for idea and his research. <br>
 Made with ❤️ for **all** translators and translation developers.
 
-This a script/tool to extract strings from assets file `.uasset` or `.uexp` from the [Unreal Enigne](https://www.unrealengine.com/). 
+This a script/tool to extract strings from assets file `.uasset` from the [Unreal Enigne](https://www.unrealengine.com/). 
 
 ## Using:
 * Or [download](https://github.com/SolicenTEAM/KismetEditor/releases) and **drag & drop** file and `.csv` to a command tool.
