@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // Общие сведения об этой сборке предоставляются следующим набором
 // набора атрибутов. Измените значения этих атрибутов для изменения сведений,
 // связанные с этой сборкой.
-[assembly: AssemblyTitle("KismetEditor")]
+[assembly: AssemblyTitle("KissE")]
 [assembly: AssemblyDescription("Kismet extractor and string replacer.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Solicen")]
-[assembly: AssemblyProduct("KismetEditor")]
+[assembly: AssemblyProduct("KissE")]
 [assembly: AssemblyCopyright("Copyright ©  2024")]
 [assembly: AssemblyTrademark("Solicen")]
 [assembly: AssemblyCulture("")]

@@ -14,6 +14,7 @@ namespace Solicen.Kismet
         static List<Argument> arguments = new List<Argument>
         {
             new Argument("--extract", "extract strings from `kismet` to csv.", () => isExtract = true),
+            new Argument("--version", "set specific unreal version: --version=4.18",null),
             new Argument("--help", "Show help information", () => ShowHelp(arguments))
         };
 
@@ -42,7 +43,7 @@ namespace Solicen.Kismet
 
         static void ProcessVersion(string[] args)
         {
-            var arg = args.FirstOrDefault(x => x.StartsWith("--version"));
+            var arg = args.FirstOrDefault(x => x.StartsWith("--version") || x.StartsWith("--v"));
             if (string.IsNullOrWhiteSpace(arg)) return;
             
             var version = arg.Split('=')[1];

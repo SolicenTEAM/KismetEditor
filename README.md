@@ -1,4 +1,4 @@
-# Solicen.KismetEditor
+# Solicen.KissE
 
 [**Englsih**](/README.md) | [**Русский**](./docs/ru/README.ru.md)
 
@@ -11,7 +11,7 @@ This a script/tool to replace and extract (EX_StringConst) from the [Unreal Enig
 * Or [download](https://github.com/SolicenTEAM/KismetEditor/releases) and **drag & drop** `.uasset` and `.csv` to a command tool.
 * Or use `KismetEditor.exe <file_path>`.
 
-### KismetEditor
+### Kis(met) s(tring) E(ditor)
 * You can simply **drag & drop** `.uasset` and `.csv` onto `KismetEditor.exe` to replace (EX_StringConst). 
 * Or use more advanced options with CMD.
 

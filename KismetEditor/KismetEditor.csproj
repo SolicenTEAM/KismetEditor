@@ -9,7 +9,7 @@
     <ProjectGuid>{DF18A493-2999-4179-9F78-120B3D06F7D7}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>KismetEditor</RootNamespace>
-    <AssemblyName>KismetEditor</AssemblyName>
+    <AssemblyName>KissE</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
