@@ -9,7 +9,7 @@ Key features of kissE:
 - Ability to modify (EX_StringConst) with those specified replacement in the CSV file.
 - Corrects (EX_UnicodeStringConst) new offsets for correct work in the game.
 
-<br>  Made with ❤️ for **all** translators and translation developers.
+Made with ❤️ for **all** translators and translation developers.
 
 ## Using
 * Or [download](https://github.com/SolicenTEAM/KismetEditor/releases) and **drag & drop** `.uasset` and `.csv` to a command tool.
