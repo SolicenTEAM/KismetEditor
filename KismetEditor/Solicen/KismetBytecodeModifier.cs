@@ -32,7 +32,22 @@ namespace Solicen.Kismet
             var strings = KismetObject.ToCSV(ubergraph);
             _fileName = _fileName == "" ? Path.GetFileNameWithoutExtension(assetPath) : _fileName;
 
-            File.WriteAllText($"{Environment.CurrentDirectory}\\{_fileName}.csv", string.Join("\n", strings));
+            #region Запись CSV
+            var csvFilePath = $"{Environment.CurrentDirectory}\\{_fileName}.csv";
+            var csv = File.ReadAllLines(csvFilePath);
+
+            // Если CSV уже существует, просто добавить новые строки
+            if (csv != null)
+            {
+                var lines = strings.Except(csv); lines.ToList().Add("\n");
+                File.AppendAllLines(csvFilePath, lines);
+            }
+            // Иначе просто записать строки в файл
+            else
+            {
+                File.WriteAllText(csvFilePath, string.Join("\n", strings));
+            }
+            #endregion
         }
 
         public static void ModifyAsset(string path, Dictionary<string, string> replacement)
