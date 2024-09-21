@@ -42,4 +42,4 @@ Kisse.exe <file_path> <input_csv>
 * You can also contribute via the [Issues](https://github.com/SolicenTEAM/KismetEditor/issues) and [Pull Request](https://github.com/SolicenTEAM/KismetEditor/pulls) tabs by suggesting your code changes. And further development of the project. 
 
 ## Thanks
-- Thanks `Ambi` for idea and his research. 
+- `Ambi` for idea and his research. 
