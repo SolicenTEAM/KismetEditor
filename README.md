@@ -7,7 +7,7 @@ KissE is a script/tool for processing and modifying (EX_String Const) inside the
 Key features of kissE:
 - Allows you to extract (EX_StringConst) bytecode as string to a CSV file.
 - Ability to modify (EX_StringConst) with those specified replacement in the CSV file.
-- After replacing (EX_StringConst), it adds new instructions to the bytecode and corrects their offsets for correct work.
+- Corrects (EX_UnicodeStringConst) new offsets for correct work in the game.
 
 <br>  Made with ❤️ for **all** translators and translation developers.
 
