@@ -30,7 +30,7 @@ Kisse.exe <file_path> <input_csv>
 | Argument | Description |
 |----------|-------------|
 | --extract | extract strings from `kismet` to csv
-| --version, --v | set specific unreal version: `--version=4.18`
+| --version | set specific unreal version: `--version=4.18`
 | --help | Show help information.
 
 ## Compilation
