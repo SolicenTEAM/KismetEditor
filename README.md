@@ -45,4 +45,4 @@ Kisse.exe <file_path> <input_csv>
 
 ## Thanks
 - [Ambi]() for idea and his research. 
-- [@atenfyr](https://github.com/atenfyr) for research and UAssetAPI.
+- [@atenfyr](https://github.com/atenfyr) for research and [UAssetAPI](https://github.com/atenfyr/UAssetAPI).
