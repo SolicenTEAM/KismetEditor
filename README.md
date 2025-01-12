@@ -44,5 +44,5 @@ Kisse.exe <file_path> <input_csv>
 * You can also contribute via the [Issues](https://github.com/SolicenTEAM/KismetEditor/issues) and [Pull Request](https://github.com/SolicenTEAM/KismetEditor/pulls) tabs by suggesting your code changes. And further development of the project. 
 
 ## Thanks
-- [Ambi]() for idea and his research. 
+- [Ambi](https://github.com/JunkBeat) for idea and his research. 
 - [@atenfyr](https://github.com/atenfyr) for research and [UAssetAPI](https://github.com/atenfyr/UAssetAPI).
