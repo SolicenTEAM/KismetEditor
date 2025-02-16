@@ -34,19 +34,20 @@ namespace Solicen.Kismet
 
             #region Запись CSV
             var csvFilePath = $"{Environment.CurrentDirectory}\\{_fileName}.csv";
-            var csv = File.ReadAllLines(csvFilePath);
-
-            // Если CSV уже существует, просто добавить новые строки
-            if (csv != null)
+            
+            if (File.Exists(csvFilePath))
             {
+                // Если CSV уже существует, просто добавить новые строки
+                var csv = File.ReadAllLines(csvFilePath);
                 var lines = strings.Except(csv); lines.ToList().Add("\n");
                 File.AppendAllLines(csvFilePath, lines);
-            }
-            // Иначе просто записать строки в файл
+            }           
             else
             {
+                // Иначе просто записать строки в файл
                 File.WriteAllText(csvFilePath, string.Join("\n", strings));
             }
+
             #endregion
         }
 

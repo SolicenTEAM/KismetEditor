@@ -62,7 +62,7 @@ namespace Solicen.Kismet
         {
             foreach (var arg in args)
             {
-                if (!arg.StartsWith("--")) continue;
+                if (!arg.StartsWith("--") || (arg.Contains("="))) continue;
                 var argument = arguments.Find(a => a.Name.Equals(arg, StringComparison.OrdinalIgnoreCase));
                 if (argument != null)
                 {
@@ -109,6 +109,25 @@ namespace Solicen.Kismet
                         {
                             var csv = Kismet.BytecodeModifier.TranslateFromCSV(csvFile);
                             Kismet.BytecodeModifier.ModifyAsset(kismetFile, csv);
+                        }
+                    }
+                }
+                else if (Directory.Exists(args[0]))
+                {
+                    var files = Directory.GetFiles($@"{args[0]}", "*", SearchOption.AllDirectories)
+                        .Where(x => x.EndsWith(".uexp") || x.EndsWith(".uasset") || x.EndsWith(".json"));
+                    foreach (var file in files)
+                    {
+                        var kismetFile = file;
+                        var info = new FileInfo(kismetFile).Name;
+                        Console.WriteLine($"...{info}");
+                        try
+                        {
+                            Solicen.Kismet.BytecodeModifier.ExtractAndWriteCSV(kismetFile, "");
+                        }
+                        catch (Exception ex)
+                        {
+                            
                         }
                     }
                 }
