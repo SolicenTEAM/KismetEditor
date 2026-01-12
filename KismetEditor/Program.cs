@@ -22,13 +22,12 @@ namespace KismetEditor
 
             var backgroundThread = new Thread(() =>
             {
-                KismetProcessor.ProcessProgram(args);
+                ProgramProcessor.ProcessProgram(args);
                 stopwatch.Stop(); timeTaken = stopwatch.Elapsed;
             });
 
             backgroundThread.Start(); backgroundThread.Join(); GC.Collect();
             Console.WriteLine($"Operation completed in: {(int)timeTaken.TotalSeconds} seconds.");
-            Console.ReadLine();
         }
     }
 }

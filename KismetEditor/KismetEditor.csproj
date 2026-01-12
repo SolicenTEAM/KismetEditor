@@ -206,12 +206,19 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="KismetProcessor.cs" />
+    <Compile Include="ProgramProcessor.cs" />
+    <Compile Include="Solicen\KismetProcessor.cs" />
     <Compile Include="Solicen\KismetBytecodeModifier.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Solicen\Kismet\InstructionSizeCalculator.cs" />
+    <Compile Include="Solicen\Kismet\MapParser.cs" />
+    <Compile Include="Solicen\Kismet\OffsetCalculator.cs" />
+    <Compile Include="Solicen\Serializer\KismetExpressionSerializer.cs" />
     <Compile Include="Solicen\KismetExtension.cs" />
-    <Compile Include="Solicen\KismetObject.cs" />
+    <Compile Include="Solicen\KismetBytecode.cs" />
+    <Compile Include="Solicen\Kismet\LObject.cs" />
+    <Compile Include="Solicen\Helpers\StringHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
