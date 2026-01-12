@@ -2,7 +2,7 @@
 
 [**Englsih**](/README.md) | [**Русский**](./docs/ru/README.ru.md)
 
-KissE is a script/tool for processing and modifying (EX_String Const) inside the [Unreal Enigne](https://www.unrealengine.com/) Kismet bytecode. It allows you to both get all available for extraction strings (EX_StringConst) and replace them with (EX_UnicodeStringConst) by changing the instruction itself inside the bytecode. 
+KissE is a script/tool for processing and modifying (EX_StringConst) inside the [Unreal Enigne](https://www.unrealengine.com/) Kismet bytecode. It allows you to both get all available for extraction strings (EX_StringConst) and replace them with (EX_UnicodeStringConst) by changing the instruction itself inside the bytecode. 
 
 [UAssetAPI](https://github.com/atenfyr/UAssetAPI) is used to work with Unreal Engine files and bytecode.
 
@@ -13,25 +13,36 @@ Key features of kissE:
 
 Made with ❤️ for **all** translators and translation developers.
 
-## Using
-* Or [download](https://github.com/SolicenTEAM/KismetEditor/releases) and **drag & drop** `.uasset` and `.csv` to a command tool.
+## Usage
+* Or [download](https://github.com/SolicenTEAM/KismetEditor/releases) and **drag & drop** `(.uasset|.umap)` and `.csv` to a command tool.
 * Or use `Kisse.exe <file_path>`.
 
 ### Kis(met) s(tring) E(ditor)
-* You can simply **drag & drop** `.uasset` and `.csv` onto `Kisse.exe` to replace (EX_StringConst). 
+* You can simply **drag & drop** `(.uasset|.umap)` and `.csv` onto `Kisse.exe` to replace (EX_StringConst). 
 * Or use more advanced options with CMD.
 
-#### Extract strings
+### For single file:
+#### Extract strings from asset (.uasset|.umap)
 ```cmd
-Kisse.exe <file_path> <output_csv> --extract
+Kisse.exe <file_path> <output_csv or null>
 ```
-#### Replace strings
+#### Replace strings in asset (.uasset|.umap)
 ```cmd 
-Kisse.exe <file_path> <input_csv> 
+Kisse.exe <input_csv> <asset_path>  
+```
+### For whole Directory:
+#### Extract strings from each asset (.uasset|.umap) in directory
+```cmd
+Kisse.exe <directory_path_with_assets>
+```
+#### Replace strings in each asset (.uasset|.umap) in directory
+```cmd
+Kisse.exe <directory_path_with_csv's> <directory_path_with_assets> --pack
 ```
 | Argument | Description |
 |----------|-------------|
-| --extract | extract strings from `kismet` to csv
+| --pack | pack translate from csv to each asset in directory
+| --debug | write additional files for debug: `Ubergraph.json`
 | --version | set specific unreal version: `--version=4.18`
 | --help | Show help information.
 
