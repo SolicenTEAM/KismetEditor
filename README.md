@@ -32,16 +32,19 @@ Kisse.exe <input_csv> <asset_path>
 ```
 ### For whole Directory:
 #### Extract strings from each asset (.uasset|.umap) in directory
+- The extracted strings will be inside each `.csv` in the `Unpack` folder.
 ```cmd
 Kisse.exe <directory_path_with_assets>
 ```
+
+
 #### Replace strings in each asset (.uasset|.umap) in directory
 ```cmd
 Kisse.exe <directory_path_with_csv's> <directory_path_with_assets> --pack
 ```
 | Argument | Description |
 |----------|-------------|
-| [CommandArgs] | run terminal after process: [UnrealPak.exe NEW_P -compress]
+| [CommandArgs] | run terminal after process: `[UnrealPak.exe NEW_P -compress]`
 | --pack | pack translate from csv to each asset in directory
 | --debug | write additional files for debug: `Ubergraph.json`
 | --version | set specific unreal version: `--version=4.18`
