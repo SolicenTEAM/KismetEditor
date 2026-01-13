@@ -50,6 +50,16 @@ Kisse.exe <directory_path_with_csv's> <directory_path_with_assets> --pack
 | --version | set specific unreal version: `--version=4.18`
 | --help | Show help information.
 
+#### Real example of [CommandArgs] usage:
+```
+"A:\SteamLibrary\steamapps\common\Wigmund\RPG\Content\Paks\UI_Tooltip.csv" "A:\SteamLibrary\steamapps\common\Wigmund\RPG\Content\Paks\s_rus_NEW_P\RPG\Content\RPG\Blueprints\UI\Game\UI_Tooltip.uasset" [A:\SteamLibrary\steamapps\common\Wigmund\RPG\Content\Paks\UnrealPak-With-Compression.bat s_rus_NEW_P | start A:\SteamLibrary\steamapps\common\Wigmund\RPG\Binaries\Win64\RPG-Win64-Shipping.exe]
+```
+- The process is fully automated here. 
+- Start the process of replacing lines in the asset in a specific folder. 
+- Inside [CommandArgs]: I connect to UnrealPak.exe and I hand over the folder that needs to be packed (the one with the asset)
+- After packing, the game starts next to check its performance. The commands are separated via '|'
+- Profit. The process is fully automated to test how the game and asset work after modification.
+
 ## Compilation
 ### Requirements
 - Visual Studio 2022 Preview
