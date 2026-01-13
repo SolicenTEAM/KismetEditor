@@ -29,21 +29,21 @@ namespace KismetEditor.Solicen
         public static void ReplaceAll(JObject assetJsonObject, Dictionary<string, string> replacement, UAsset _asset)
         {
             asset = _asset;
-            Console.WriteLine("\n[KismetProcessor] Запуск нового процесса замены...");
+            Console.WriteLine("\n[INF] Starting a new replacement process...");
             foreach (var entry in replacement)
             {
                 string replaceFrom = entry.Key;
                 string replaceTo = entry.Value;
-                Console.WriteLine($"\n--- Обработка строки: '{replaceFrom.Escape()}' ---");
+                Console.WriteLine($"\n--- String processing: '{replaceFrom.Escape()}' ---");
 
                 // Заменяем все вхождения этой строки, пока они находятся
                 while (ReplaceSingle(assetJsonObject, replaceFrom, replaceTo))
                 {
-                    Console.WriteLine($"[INFO] Вхождение '{replaceFrom.Escape()}' было заменено. Поиск следующего...");
+                    Console.WriteLine($"[INF] Occurrence of '{replaceFrom.Escape()}' has been replaced. Search for the next one...");
                 }
-                Console.WriteLine($"--- Завершена обработка строки: '{replaceFrom.Escape()}' ---");
+                Console.WriteLine($"--- Line processing completed: '{replaceFrom.Escape()}' ---");
             }
-            Console.WriteLine("\n[KismetProcessor] Процесс замены полностью завершен.");
+            Console.WriteLine("\n[INF] Replacement process is fully completed.");
         }
 
         private static bool ReplaceSingle(JObject assetJsonObject, string replaceFrom, string replaceTo)
@@ -54,7 +54,7 @@ namespace KismetEditor.Solicen
 
             if (liveUbergraph == null)
             {
-                Console.WriteLine("[ERROR] Не удалось найти уберграф в JObject.");
+                Console.WriteLine("[ERR] Couldn't find the ubergraph in JObject.");
                 return false;
             }
 
@@ -64,7 +64,7 @@ namespace KismetEditor.Solicen
             if (replaced)
             {
                 // Шаги 6-8: Если замена произошла, пересчитываем смещения
-                Console.WriteLine("[DEBUG] Пересчет и патчинг смещений...");
+                Console.WriteLine("[INF] Recalculation and patching of offsets...");
                 // Для пересчета нам снова нужен сериализованный ассет
                 asset = UAsset.DeserializeJson(assetJsonObject.ToString());
                 var newUbergraph = KismetExtension.GetUbergraphJson(asset);
@@ -77,11 +77,11 @@ namespace KismetEditor.Solicen
 
                 if (newToEnd <= 0 || newFromEnd <= 0)
                 {
-                    Console.WriteLine($"[ERROR] Не удалось вычислить смещения (ToEnd: {newToEnd}, FromEnd: {newFromEnd}). Процесс может быть нестабилен.");
+                    Console.WriteLine($"[WRN] Offsets could not be calculated (ToEnd: {newToEnd}, FromEnd: {newFromEnd}). The process may be unstable.");
                 }
                 else
                 {
-                    Console.WriteLine($"[DEBUG] Вычислены новые смещения: ToEnd -> {newToEnd}, FromEnd -> {newFromEnd}.");
+                    Console.WriteLine($"[INF] New offsets have been calculated (ToEnd -> {newToEnd}, FromEnd -> {newFromEnd})");
                 }
 
                 // Заменяем магические числа на реальные смещения в "живом" JObject
@@ -96,13 +96,12 @@ namespace KismetEditor.Solicen
 
         public static JArray JumpOffsetInstruction(string fillString)
         {
-            // Создание новой инструкции
+            // Инструкция прыжка
             JObject jumpInstruction = new JObject
             {
                 { "$type", "UAssetAPI.Kismet.Bytecode.Expressions.EX_Jump, UAssetAPI" },
                 { "CodeOffset", MAGIC_TES }
             };
-
             // Инструкция с заполнителем
             JObject newInstruction = new JObject
             {
@@ -129,11 +128,11 @@ namespace KismetEditor.Solicen
                     JToken valueToken = obj["Value"] ?? obj["RawValue"];
                     if (valueToken?.ToString() == replaceFrom)
                     {
-                        Console.WriteLine($"[DEBUG] Найден кандидат со строкой '{replaceFrom}'. Применяем фильтры...");
+                        Console.WriteLine($"[INF] A candidate with the string '{replaceFrom.Escape()}' was found. Apply filters...");
                         // Применяем фильтры
                         if (token.Ancestors().Any(ancestor => ancestor is JProperty prop && prop.Name == "AssignmentExpression"))
                         {
-                            Console.WriteLine("[DEBUG] Отфильтровано: находится в 'AssignmentExpression'.");
+                            Console.WriteLine("[INF] Filtered: located in the 'AssignmentExpression'.");
                             return false; // Продолжаем поиск
                         }
 
@@ -146,10 +145,10 @@ namespace KismetEditor.Solicen
                         var statement = current as JObject;
                         if (statement == null)
                         {
-                            Console.WriteLine("[ERROR] Не удалось найти родительский Statement.");
+                            Console.WriteLine("[ERR] The parent Statement could not be found.");
                             return false; // Критическая ошибка, но может, в другом месте найдется
                         }
-                        Console.WriteLine($"[DEBUG] Найден родительский Statement для модификации.");
+                        Console.WriteLine($"[INF] The parent Statement was found for modification.");
 
                         // Шаг 4: Запоминаем, удаляем и вставляем заполнитель
                         int originalIndex = scriptBytecodeArray.IndexOf(statement);
@@ -157,17 +156,18 @@ namespace KismetEditor.Solicen
 
                         scriptBytecodeArray.RemoveAt(originalIndex);
 
-                        Console.WriteLine($"[DEBUG] Шаг 1: Подсчет размера всех инструкций.");
+                        Console.WriteLine($"[INF] Step 1: Calculate the size of all instructions.");
                         var size = InstructionSizeCalculator.GetSize(asset, statement, ubergraph);
-                        Console.WriteLine($"[DEBUG] Шаг 2: Подсчет размера заполнителя.");
-                        var fillString = KismetExtension.FillBySize(size);
+                        Console.WriteLine($"[INF] Step 2: Calculate the placeholder size.");
+                        var placeholder = KismetExtension.PlaceholderBySize(size);
 
-                        foreach (var inst in JumpOffsetInstruction(fillString))
+
+                        foreach (var inst in JumpOffsetInstruction(placeholder))
                         {
                             scriptBytecodeArray.Insert(originalIndex, inst);
                         }
-                        Console.WriteLine($"[DEBUG] Шаг 3: Завершен подсчет размера заполнителя: {fillString.Length}.");
-                        Console.WriteLine("[DEBUG] Шаг 4: Старая инструкция удалена, заполнитель и прыжок (TES) вставлены.");
+                        Console.WriteLine($"[INF] Step 3: The placeholder size calculation is completed: {placeholder.Length}.");
+                        Console.WriteLine("[INF] Step 4: The old instruction deleted, the placeholder and the jump (TES) are inserted.");
 
                         // Шаг 5: Вставляем измененную инструкцию и прыжок-возврат в конец
                         var stringConstToModify = statement.SelectTokens("$..*").OfType<JObject>().FirstOrDefault(o => (o["Value"] ?? o["RawValue"])?.ToString() == replaceFrom);
@@ -179,13 +179,11 @@ namespace KismetEditor.Solicen
                             if (stringConstToModify.ContainsKey("RawValue")) stringConstToModify["RawValue"] = replaceTo;
                         }
 
-                        var returnJump = new JObject {
-                                            { "$type", "UAssetAPI.Kismet.Bytecode.Expressions.EX_Jump, UAssetAPI" },
-                                            { "CodeOffset", MAGIC_FES }};
+                        var returnJump = new JObject {{ "$type", "UAssetAPI.Kismet.Bytecode.Expressions.EX_Jump, UAssetAPI" },{ "CodeOffset", MAGIC_FES }};
 
                         scriptBytecodeArray.Add(statement);
                         scriptBytecodeArray.Add(returnJump);
-                        Console.WriteLine("[DEBUG] Шаг 5: Измененная инструкция и прыжок (FES) добавлены в конец.");
+                        Console.WriteLine("[INF] Step 5: The modified instruction and the jump (FES) added to the end.");
                         ModifiedInstCount++;
 
                         return true; // Замена произведена, выходим из рекурсии
@@ -222,10 +220,10 @@ namespace KismetEditor.Solicen
             if (jumpToReplace != null)
             {
                 jumpToReplace["CodeOffset"] = newOffset;
-                Console.WriteLine($"[DEBUG] Патчинг: Магическое число {magicToFind} заменено на смещение {newOffset}.");
+                Console.WriteLine($"[INF] Patch: The magic number {magicToFind} has been replaced with the offset {newOffset}.");
             } else
             {
-                Console.WriteLine($"[WARNING] Не удалось найти инструкцию с магическим числом {magicToFind} для замены.");
+                Console.WriteLine($"[ERR] Couldn't find instructions with the magic number {magicToFind} to replace.");
             }
         }
     }

@@ -37,13 +37,13 @@ namespace Solicen.Kismet
 
         public static string[] ParseAsCSV(JArray jArray)
         {
-            Console.WriteLine("[Extracted strings]");
+            Console.WriteLine("[Extract mode]\n");
             var kismetValues = new HashSet<string>(CreateMap(jArray, null, true).Select(x => x.Value));
 
             HashSet<string> csvLines = new HashSet<string>();
             foreach (var value in kismetValues)
             {
-                Console.WriteLine($"| {value.Escape()} |");
+                Console.WriteLine($" - {value.Escape()}");
                 csvLines.Add($"{value.Escape()}|");
             }
             return csvLines.ToArray();

@@ -15,8 +15,10 @@ namespace KismetEditor
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("KismetEditor | Solicen");
-            Console.WriteLine("———————————————————————————————————————————————");
+            Console.WriteLine("KismetEditor by Denis Solicen                             |");
+            Console.WriteLine("[URL] https://github.com/SolicenTEAM/KismetEditor         |");
+            Console.WriteLine("[INF] Toss a coin: https://boosty.to/denissolicen/donate  |");
+            Console.WriteLine("———————————————————————————————————————————————————————————\n");
             Thread.Sleep(200);
             Stopwatch stopwatch = new Stopwatch(); stopwatch.Start();
             TimeSpan timeTaken = new TimeSpan();

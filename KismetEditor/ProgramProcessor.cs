@@ -191,8 +191,6 @@ namespace Solicen.Kismet
             var cmdArg = GetRunCommand(args);
             if (!string.IsNullOrWhiteSpace(cmdArg)) RunTerminal(cmdArg);
             #endregion
-
-            if (DebugMode) Console.ReadLine();
         }
 
     }

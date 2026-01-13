@@ -27,14 +27,10 @@ namespace Solicen.Kismet
                 try
                 {
                     var values = l.Split('|');
-                    var key = values[0];
-                    var value = values[1];
-                    
-                    key = StringHelper.Unescape(key);
-                    value = StringHelper.Unescape(value);
-
+                    var key = values[0].Unescape();
+                    var value = values[1].Unescape();
                     try { if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value)) csvValues.Add(key, value); }
-                    catch (Exception ex) { Console.WriteLine($"[{key}] Элемент с таким ключом уже был добавлен."); }
+                    catch (Exception ex) { Console.WriteLine($"[{key}] An element with this key has already been added."); }
                 }
                 catch
                 {
@@ -68,7 +64,7 @@ namespace Solicen.Kismet
 
             #region Запись CSV
             var csvFilePath = _fileName.EndsWith(".csv") ? _fileName : _fileName + ".csv";
-            Console.WriteLine($"Write CSV to {csvFilePath}");
+            Console.WriteLine($"\n[SUCCESS] File with extracted strings was successfully saved in: {csvFilePath}");
             if (File.Exists(csvFilePath))
             {
                 // Если CSV уже существует, просто добавить новые строки
@@ -104,11 +100,11 @@ namespace Solicen.Kismet
             UAsset asset = new UAsset(path, Version);
             var json = asset.SerializeJson(Formatting.Indented);
             JObject jsonObject = JObject.Parse(json);
-            Console.WriteLine("[Replace string]");
+            Console.WriteLine("[Replacement mode]");
             var ubergraphExpressions = KismetExtension.GetUbergraphJson(asset);
             if (ubergraphExpressions == null)
             {
-                Console.WriteLine("[ERROR] Не удалось получить JArray уберграфа из ассета.");
+                Console.WriteLine("[ERR] Couldn't get the ubergraph JArray from the asset.");
                 return;
             }
 
@@ -122,7 +118,7 @@ namespace Solicen.Kismet
                 var _json = jsonObject.ToString();
                 // Сохраняем итоговый JSON в файл для ручной проверки
                 File.WriteAllText($"{Environment.CurrentDirectory}\\Ubergraph.json", _json);
-                Console.WriteLine($"[INFO] Модифицированный JSON сохранен в: {Environment.CurrentDirectory}\\Ubergraph.json");
+                Console.WriteLine($"[INF] The modified JSON is saved in: {Environment.CurrentDirectory}\\Ubergraph.json");
             }
             if (!File.Exists(Path.ChangeExtension(path, ".bak")))
             {
@@ -131,8 +127,8 @@ namespace Solicen.Kismet
             }
 
             ModdedAsset.Write(path);
-            Console.WriteLine($"[INFO] Всего было произведено замен: {KismetProcessor.ModifiedInstCount}");
-            Console.WriteLine($"[SUCCESS] Модифицированный ассет успешно сохранен в: {path}");
+            Console.WriteLine($"[INF] Total replacements: {KismetProcessor.ModifiedInstCount}");
+            Console.WriteLine($"[SUCCESS] The modified asset was successfully saved in: {path}");
             
         }
     }

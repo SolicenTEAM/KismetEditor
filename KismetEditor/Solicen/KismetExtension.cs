@@ -32,7 +32,7 @@ namespace Solicen.Kismet
 
         const int EX_ConstString = 2; // Размер инструкции ConstString 
         const int EX_Jump = 5; // Размер инструкции прыжка
-        public static string FillBySize(int size)
+        public static string PlaceholderBySize(int size)
         {
             string s = ""; // Заполнитель строки
             // Отнимает от общего размера магическое число 7
