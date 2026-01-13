@@ -37,4 +37,17 @@ static internal class StringHelper
             .Replace("\"\"", "\"");
     }
 
+    public static bool IsGUID(this string str)
+    {
+        if (str.Length >= 32)
+        {
+            foreach (char c in str)
+            {
+                if (((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')))
+                    return true;
+            }
+        }
+        return false;
+    }
+
 }

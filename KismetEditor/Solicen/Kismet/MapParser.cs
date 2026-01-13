@@ -152,7 +152,7 @@ namespace Solicen.Kismet
 
                         string value = valueToken.ToString();
                         if (token.Ancestors().Any(a => a is JProperty p && p.Name == "AssignmentExpression")) return;
-                        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2 || value.Contains("_") || value == "None" || int.TryParse(value, out _)) return;
+                        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2 || value.Contains("_") || value == "None" || int.TryParse(value, out _) || value.IsGUID()) return;
                         kismets.Add(new LObject(statementIndex, value, "StringConst", offset, 0)); 
                     }
                 }

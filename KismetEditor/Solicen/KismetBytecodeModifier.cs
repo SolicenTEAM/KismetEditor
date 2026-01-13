@@ -62,7 +62,7 @@ namespace Solicen.Kismet
 
             #region Запись CSV
             var csvFilePath = _fileName.EndsWith(".csv") ? _fileName : $"{EnvironmentHelper.CurrentAssemblyDirectory}\\{_fileName}.csv";
-            Console.WriteLine($"\n[SUCCESS] File with extracted strings was successfully saved in: {csvFilePath}");
+            Console.WriteLine($"[SUCCESS] File with extracted strings was successfully saved in: {csvFilePath}\n");
             if (File.Exists(csvFilePath))
             {
                 // Если CSV уже существует, просто добавить новые строки
