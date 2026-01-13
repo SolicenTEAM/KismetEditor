@@ -41,6 +41,7 @@ Kisse.exe <directory_path_with_csv's> <directory_path_with_assets> --pack
 ```
 | Argument | Description |
 |----------|-------------|
+| [CommandArgs] | run terminal after process: [UnrealPak.exe NEW_P -compress]
 | --pack | pack translate from csv to each asset in directory
 | --debug | write additional files for debug: `Ubergraph.json`
 | --version | set specific unreal version: `--version=4.18`
