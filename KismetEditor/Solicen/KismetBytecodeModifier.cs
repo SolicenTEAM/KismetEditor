@@ -43,7 +43,6 @@ namespace Solicen.Kismet
 
         public static void ExtractAndWriteCSV(string assetPath, string _fileName = "")
         {
-
             UAsset asset = new UAsset(assetPath, Version);
             var json = asset.SerializeJson(Newtonsoft.Json.Formatting.Indented);
             var ubergraph = KismetExtension.GetUbergraphSerialized(asset);
@@ -57,13 +56,12 @@ namespace Solicen.Kismet
                 File.WriteAllText($"{Environment.CurrentDirectory}\\{Path.GetFileNameWithoutExtension(assetPath)}_DUMMY.json", serializer.SerializeExpressionArray(u).ToString());
 
             }
-
             var strings = MapParser.ParseAsCSV(ubergraph);
             _fileName = _fileName == string.Empty ? Path.GetFileNameWithoutExtension(assetPath) : _fileName;
             if (strings.Length == 0) return;
 
             #region Запись CSV
-            var csvFilePath = _fileName.EndsWith(".csv") ? _fileName : _fileName + ".csv";
+            var csvFilePath = _fileName.EndsWith(".csv") ? _fileName : $"{EnvironmentHelper.CurrentAssemblyDirectory}\\{_fileName}.csv";
             Console.WriteLine($"\n[SUCCESS] File with extracted strings was successfully saved in: {csvFilePath}");
             if (File.Exists(csvFilePath))
             {
@@ -100,7 +98,6 @@ namespace Solicen.Kismet
             UAsset asset = new UAsset(path, Version);
             var json = asset.SerializeJson(Formatting.Indented);
             JObject jsonObject = JObject.Parse(json);
-            Console.WriteLine("[Replacement mode]");
             var ubergraphExpressions = KismetExtension.GetUbergraphJson(asset);
             if (ubergraphExpressions == null)
             {

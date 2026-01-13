@@ -37,7 +37,6 @@ namespace Solicen.Kismet
 
         public static string[] ParseAsCSV(JArray jArray)
         {
-            Console.WriteLine("[Extract mode]\n");
             var kismetValues = new HashSet<string>(CreateMap(jArray, null, true).Select(x => x.Value));
 
             HashSet<string> csvLines = new HashSet<string>();

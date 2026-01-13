@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Solicen.Kismet
@@ -50,14 +51,11 @@ namespace Solicen.Kismet
         static void RunTerminal(string anyCommand) => System.Diagnostics.Process.Start("CMD.exe", "/c " + anyCommand);
         static string[] SplitArgs(string[] args)
         {
-            if (GetRunCommand(args) != string.Empty)
-                return string.Join(" ", args).Replace(GetRunCommand(args), "").Split(' ').Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
-            else
-                return string.Join(" ", args).Split(' ').Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+            var regex = new Regex(@"[""](\w.*?)[""]|[[](.*?)[]]");
+            var matches = regex.Matches(string.Join(" ", args.Select(x => $"\"{x}\"")));
+            return matches.Cast<Match>().Select(m => m.Groups[1].Value.ToString()).Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
         }
         #endregion
-
-        
 
         static void ProcessVersion(string[] args)
         {
@@ -106,13 +104,15 @@ namespace Solicen.Kismet
         }
         public static void ProcessProgram(string[] args)
         {
+            var cmdArg = GetRunCommand(args);
             args = SplitArgs(args);
             ProcessArgs(args); ProcessVersion(args);
             if (args.Length > 0)
             {
-                var onlyStr = args.Where(x => !x.StartsWith("--") || !x.StartsWith("[")).ToArray();
+                var onlyStr = args.Where(x => !x.StartsWith("--")).ToArray();
                 if (onlyStr[0].Contains(".uasset") || args[0].Contains(".umap"))
                 {
+                    Console.WriteLine("[Extract mode]\n");
                     var kismetFile = onlyStr.First(x => !x.Contains(".csv"));
                     var csvFile = onlyStr.Count() >1 ? onlyStr.FirstOrDefault(x => x.Contains(".csv"))
                         : Path.GetFileNameWithoutExtension(kismetFile);
@@ -145,6 +145,7 @@ namespace Solicen.Kismet
                     // Если аргумент содержит .csv файл - запускаем замену строк
                     if (Path.GetExtension(csvFile) == ".csv")
                     {
+                        Console.WriteLine("[Replacement mode]");
                         var csv = Kismet.BytecodeModifier.TranslateFromCSV(csvFile);
                         Kismet.BytecodeModifier.ModifyAsset(kismetFile, csv);
                     }
@@ -156,6 +157,7 @@ namespace Solicen.Kismet
                     var otherDirectory = packFiles == true && onlyStr.Length > 1 ? onlyStr[1] : string.Empty; 
                     if (otherDirectory != string.Empty)
                     {
+                        Console.WriteLine("[Replacement mode]");
                         var csvFiles = Directory.GetFiles($@"{otherDirectory}", "*", SearchOption.AllDirectories)
                         .Where(x => x.EndsWith(".csv"));
                         foreach (var csv in csvFiles)
@@ -167,28 +169,27 @@ namespace Solicen.Kismet
                     }
                     else
                     {
+                        Console.WriteLine("[Extract mode]\n");
                         foreach (var file in files)
                         {
                             var kismetFile = file;
                             var info = new FileInfo(kismetFile);
-                            Console.WriteLine($"...{info.Name}");
-
+                            Console.WriteLine($"[INF] ...{info.Name}");
                             try
                             {
+                                GC.Collect(2);
                                 Solicen.Kismet.BytecodeModifier.ExtractAndWriteCSV(kismetFile, CreateDirectoryAndGetUnpackCsvPath(file));
                             }
                             catch (Exception ex)
                             {
-
+                                GC.Collect();
                             }
+
                         }
-                    }
-                    
-                   
+                    }                       
                 }
             }
             #region Запускаем командную строку
-            var cmdArg = GetRunCommand(args);
             if (!string.IsNullOrWhiteSpace(cmdArg)) RunTerminal(cmdArg);
             #endregion
         }
