@@ -15,7 +15,8 @@ namespace KismetEditor
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("KismetEditor by Denis Solicen                             |");
+            var vers = $"{FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion}";
+            Console.WriteLine($"KismetEditor {vers} - by Solicen (Denis Solicen)         |");
             Console.WriteLine("[URL] https://github.com/SolicenTEAM/KismetEditor         |");
             Console.WriteLine("[INF] Toss a coin: https://boosty.to/denissolicen/donate  |");
             Console.WriteLine("———————————————————————————————————————————————————————————\n");
