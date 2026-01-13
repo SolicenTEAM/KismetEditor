@@ -93,14 +93,13 @@ namespace Solicen.Kismet
             }
         }
 
-        private static string CreateDirectoryAndGetUnpackCsvPath(string file)
+        private static string GetUnpackCsvPath(string file)
         {
-            var csvFile = Path.GetFileNameWithoutExtension(file);
-            var directoryName = Path.GetFileName(Path.GetDirectoryName(file));
-            var unpackDirectory = EnvironmentHelper.CurrentAssemblyDirectory + "\\Unpack\\" + $"\\{directoryName}\\";
+            var csvFile = string.IsNullOrWhiteSpace(file) ? "" : Path.GetFileNameWithoutExtension(file)+".csv";
+            var directoryName = string.IsNullOrWhiteSpace(file) ? "" : $"\\{Path.GetFileName(Path.GetDirectoryName(file))}\\";
+            var unpackDirectory = EnvironmentHelper.CurrentAssemblyDirectory + "\\Unpack\\" + directoryName;
             Directory.CreateDirectory(unpackDirectory);
-
-            return unpackDirectory + csvFile + ".csv";
+            return unpackDirectory + csvFile;
         }
         public static void ProcessProgram(string[] args)
         {
@@ -178,7 +177,7 @@ namespace Solicen.Kismet
                             try
                             {
                                 GC.Collect(2);
-                                Solicen.Kismet.BytecodeModifier.ExtractAndWriteCSV(kismetFile, CreateDirectoryAndGetUnpackCsvPath(file));
+                                Solicen.Kismet.BytecodeModifier.ExtractAndWriteCSV(kismetFile, GetUnpackCsvPath(file));
                             }
                             catch (Exception ex)
                             {
@@ -186,6 +185,13 @@ namespace Solicen.Kismet
                             }
 
                         }
+                        foreach (var dir in Directory.GetDirectories(GetUnpackCsvPath("")))
+                        {
+                            DirectoryInfo dirInfo = new DirectoryInfo(dir);
+                            if (dirInfo.GetFiles().Length == 0 && dirInfo.GetDirectories().Length == 0)
+                                Directory.Delete(dir);
+                        }
+
                     }                       
                 }
             }
