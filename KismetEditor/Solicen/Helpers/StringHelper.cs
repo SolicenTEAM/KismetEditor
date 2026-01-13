@@ -14,7 +14,7 @@ static internal class StringHelper
         return str.StartsWith("\"") && str.Contains(',') && str.EndsWith("\"") ? str.Trim('\"') : str;
     }
 
-    public static string EscapeKey(this string str)
+    public static string Escape(this string str)
     {
         return str
 
@@ -26,7 +26,7 @@ static internal class StringHelper
             .Replace("\"", "\"\"");
     }
 
-    public static string UnEscapeKey(this string str)
+    public static string Unescape(this string str)
     {
         return str
             .Replace("<cf>", "\\r\\n")

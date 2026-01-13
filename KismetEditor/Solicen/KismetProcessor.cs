@@ -4,8 +4,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using UAssetAPI;
+using UAssetAPI.Kismet;
+using UAssetAPI.Kismet.Bytecode;
 using UAssetAPI.PropertyTypes.Structs;
 
 namespace KismetEditor.Solicen
@@ -31,14 +34,14 @@ namespace KismetEditor.Solicen
             {
                 string replaceFrom = entry.Key;
                 string replaceTo = entry.Value;
-                Console.WriteLine($"\n--- Обработка строки: '{replaceFrom}' ---");
+                Console.WriteLine($"\n--- Обработка строки: '{replaceFrom.Escape()}' ---");
 
                 // Заменяем все вхождения этой строки, пока они находятся
                 while (ReplaceSingle(assetJsonObject, replaceFrom, replaceTo))
                 {
-                    Console.WriteLine($"[INFO] Вхождение '{replaceFrom}' было заменено. Поиск следующего...");
+                    Console.WriteLine($"[INFO] Вхождение '{replaceFrom.Escape()}' было заменено. Поиск следующего...");
                 }
-                Console.WriteLine($"--- Завершена обработка строки: '{replaceFrom}' ---");
+                Console.WriteLine($"--- Завершена обработка строки: '{replaceFrom.Escape()}' ---");
             }
             Console.WriteLine("\n[KismetProcessor] Процесс замены полностью завершен.");
         }
@@ -47,6 +50,8 @@ namespace KismetEditor.Solicen
         {
             // Шаг 1: Получаем "живой" уберграф для поиска и модификации
             var liveUbergraph = KismetExtension.GetUbergraph(assetJsonObject);
+            var bytecode = KismetExtension.GetUbergraph(asset);
+
             if (liveUbergraph == null)
             {
                 Console.WriteLine("[ERROR] Не удалось найти уберграф в JObject.");
@@ -54,21 +59,19 @@ namespace KismetEditor.Solicen
             }
 
             // Шаг 2: Рекурсивно ищем и сразу заменяем первое найденное вхождение
-            bool replaced = FindAndReplaceRecursively(liveUbergraph, liveUbergraph, replaceFrom, replaceTo);
+            bool replaced = FindAndReplaceRecursively(liveUbergraph, liveUbergraph, bytecode, replaceFrom, replaceTo);
 
             if (replaced)
             {
                 // Шаги 6-8: Если замена произошла, пересчитываем смещения
                 Console.WriteLine("[DEBUG] Пересчет и патчинг смещений...");
                 // Для пересчета нам снова нужен сериализованный ассет
-                var tempAsset = UAsset.DeserializeJson(assetJsonObject.ToString());
-                var newUbergraph = KismetExtension.GetUbergraphJson(tempAsset);
+                asset = UAsset.DeserializeJson(assetJsonObject.ToString());
+                var newUbergraph = KismetExtension.GetUbergraphJson(asset);
 
                 // Для получения карты смещений нам нужен полный список инструкций
                 var newInstructionMap = MapParser.CreateMap(newUbergraph, asset, false);
-                var debugMap = MapParser.CreateMap(newUbergraph, asset, true);
-
-
+                //var debugMap = MapParser.CreateMap(newUbergraph, asset, true);
                 var newToEnd = OffsetCalculator.GetOffset(newInstructionMap, MAGIC_TES);
                 var newFromEnd = OffsetCalculator.GetOffset(newInstructionMap, MAGIC_FES);
 
@@ -113,7 +116,7 @@ namespace KismetEditor.Solicen
         }
 
 
-        private static bool FindAndReplaceRecursively(JToken token, JArray scriptBytecodeArray, string replaceFrom, string replaceTo)
+        private static bool FindAndReplaceRecursively(JToken token, JArray scriptBytecodeArray, KismetExpression[] ubergraph, string replaceFrom, string replaceTo)
         {
             if (token is JObject obj)
             {
@@ -155,7 +158,7 @@ namespace KismetEditor.Solicen
                         scriptBytecodeArray.RemoveAt(originalIndex);
 
                         Console.WriteLine($"[DEBUG] Шаг 1: Подсчет размера всех инструкций.");
-                        var size = InstructionSizeCalculator.GetSize(statement);
+                        var size = InstructionSizeCalculator.GetSize(asset, statement, ubergraph);
                         Console.WriteLine($"[DEBUG] Шаг 2: Подсчет размера заполнителя.");
                         var fillString = KismetExtension.FillBySize(size);
 
@@ -191,14 +194,14 @@ namespace KismetEditor.Solicen
 
                 foreach (var property in obj.Properties())
                 {
-                    if (FindAndReplaceRecursively(property.Value, scriptBytecodeArray, replaceFrom, replaceTo)) return true;
+                    if (FindAndReplaceRecursively(property.Value, scriptBytecodeArray, ubergraph, replaceFrom, replaceTo)) return true;
                 }
             }
             else if (token is JArray array)
             {
                 foreach (var item in array)
                 {
-                    if (FindAndReplaceRecursively(item, scriptBytecodeArray, replaceFrom, replaceTo)) return true;
+                    if (FindAndReplaceRecursively(item, scriptBytecodeArray, ubergraph, replaceFrom, replaceTo)) return true;
                 }
             }
             return false;

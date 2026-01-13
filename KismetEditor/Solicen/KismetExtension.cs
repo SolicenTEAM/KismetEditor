@@ -35,7 +35,7 @@ namespace Solicen.Kismet
         public static string FillBySize(int size)
         {
             string s = ""; // Заполнитель строки
-            // Отнимает от общего размера магическое число 7, затем отнимаем размер прыжка.
+            // Отнимает от общего размера магическое число 7
             int resultSize = size - (EX_ConstString + EX_Jump);
             Parallel.For(0, resultSize, (i) =>
             {

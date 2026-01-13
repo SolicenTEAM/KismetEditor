@@ -1,9 +1,11 @@
-﻿using Newtonsoft.Json.Linq;
+﻿﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UAssetAPI;
+using UAssetAPI.Kismet;
+using UAssetAPI.Kismet.Bytecode;
 using UAssetAPI.UnrealTypes;
 namespace Solicen.Kismet
 {
@@ -19,14 +21,13 @@ namespace Solicen.Kismet
         /// <summary>
         /// Создает карту инструкций из JArray уберграфа.
         /// </summary>
-        public static LObject[] CreateMap(JArray JArray, UAsset asset, bool onlyString = false)
+        public static LObject[] CreateMap(JArray jArray, UAsset asset, bool onlyString = false)
         {
             uAsset = asset;
             List<LObject> kismets = new List<LObject>();
-            if (JArray != null)
+            if (jArray != null)
             {
-
-                foreach (var token in JArray)
+                foreach (var token in jArray)
                 {
                     ParseRecursively(token, kismets, onlyString);
                 }
@@ -34,17 +35,16 @@ namespace Solicen.Kismet
             return kismets.ToArray();
         }
 
-        public static string[] ParseAsCSV(JArray JArray)
+        public static string[] ParseAsCSV(JArray jArray)
         {
             Console.WriteLine("[Extracted strings]");
-            // Используем HashSet для автоматической уникализации строк
-            var kismetValues = new HashSet<string>(CreateMap(JArray, null, true).Select(x => x.Value));
+            var kismetValues = new HashSet<string>(CreateMap(jArray, null, true).Select(x => x.Value));
 
             HashSet<string> csvLines = new HashSet<string>();
             foreach (var value in kismetValues)
             {
-                Console.WriteLine($"| {value.EscapeKey()} |");
-                csvLines.Add($"{value.EscapeKey()} | ");
+                Console.WriteLine($"| {value.Escape()} |");
+                csvLines.Add($"{value.Escape()}|");
             }
             return csvLines.ToArray();
         }
@@ -92,8 +92,9 @@ namespace Solicen.Kismet
             }
 
             // Вычисляем размер инструкции, передавая корневой JObject выражения
-            int instructionSize = InstructionSizeCalculator.GetSize(statement);
-            kismets.Add(new LObject(statementIndex, value, instructionType, offset, instructionSize));
+            //int instructionSize = InstructionSizeCalculator.GetSize(statement);
+
+            kismets.Add(new LObject(statementIndex, value, instructionType, offset, 0));
         }
 
         /// <summary>
@@ -116,9 +117,9 @@ namespace Solicen.Kismet
                 }
                 node = node.Parent;
             }
-            return (JObject)currentToken;
+            JToken token = node == null ? currentToken : node;
+            return (JObject)token;
         }
-
 
         /// <summary>
         /// Оригинальная рекурсивная логика для поиска только локализуемых строк.
@@ -127,6 +128,7 @@ namespace Solicen.Kismet
         {
             if (token is JObject obj)
             {
+                bool isLocalized = (obj.TryGetValue("LocalizedSource", out var localToken));
                 bool isStringConst = (obj.TryGetValue("$type", out var typeToken) && typeToken.ToString().Contains("StringConst")) ||
                                      (obj.TryGetValue("Inst", out var instToken) && instToken.ToString().Contains("StringConst"));
 
@@ -135,19 +137,24 @@ namespace Solicen.Kismet
                 int offset = rootExpression["Offset"]?.Value<int>() ?? 0;
 
                 // Находим корневой Expression, чтобы правильно посчитать размер всей инструкции
-
-                int size = InstructionSizeCalculator.GetSize(rootExpression);
-
                 if (isStringConst)
                 {
                     JToken valueToken = obj["Value"] ?? obj["RawValue"];
                     if (valueToken != null && valueToken.Type == JTokenType.String)
                     {
+                        // Проверяем, не является ли эта строка частью данных для локализации (.locres)
+                        if (token.Parent is JProperty parentProperty)
+                        {
+                            if (parentProperty.Name == "LocalizedSource" || parentProperty.Name == "LocalizedKey" || parentProperty.Name == "LocalizedNamespace")
+                            {
+                                return; // Пропускаем эту строку
+                            }
+                        }
+
                         string value = valueToken.ToString();
                         if (token.Ancestors().Any(a => a is JProperty p && p.Name == "AssignmentExpression")) return;
                         if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2 || value.Contains("_") || value == "None" || int.TryParse(value, out _)) return;
-
-                        kismets.Add(new LObject(statementIndex, value, "StringConst", offset, size)); 
+                        kismets.Add(new LObject(statementIndex, value, "StringConst", offset, 0)); 
                     }
                 }
 

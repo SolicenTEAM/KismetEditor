@@ -207,6 +207,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ProgramProcessor.cs" />
+    <Compile Include="Solicen\Helpers\EnviromentHelper.cs" />
     <Compile Include="Solicen\KismetProcessor.cs" />
     <Compile Include="Solicen\KismetBytecodeModifier.cs" />
     <Compile Include="Program.cs" />

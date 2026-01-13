@@ -3,23 +3,27 @@ using Newtonsoft.Json.Linq;
 using UAssetAPI.Kismet.Bytecode;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UAssetAPI.Kismet.Bytecode.Expressions;
 using UAssetAPI;
 using UAssetAPI.UnrealTypes;
+
 public class KismetExpressionSerializer
 {
-    public  UAsset Asset;
+    public UAsset Asset;
     public KismetExpressionSerializer(UAsset asset)
-    { Asset = asset; }
+    {
+        Asset = asset;
+    }
 
     /// <summary>
-    /// Сериализует KismetExpression в JObject, рекурсивно обходя все его поля
-    /// для создания подробного представления, аналогичного UAssetGUI.
+    /// Сериализует KismetExpression в JObject, рекурсивно обходя все его свойства и поля.
+    /// Пропускает RawValue и использует Value. Добавляет $type для Kismet-объектов.
     /// </summary>
     /// <param name="expression">Выражение для сериализации.</param>
     /// <returns>JObject, представляющий выражение.</returns>
-    private JObject SerializeExpression(KismetExpression expression)
+    public JObject SerializeExpression(KismetExpression expression)
     {
         if (expression == null) return null;
 
@@ -27,106 +31,177 @@ public class KismetExpressionSerializer
         string typeName = expression.GetType().FullName;
         res.Add("$type", typeName + ", UAssetAPI");
 
-        // Гибридный подход: используем рефлексию для получения ВСЕХ полей,
-        // чтобы гарантировать, что никакие данные не будут потеряны.
-        // Это решает проблему с пропущенными полями, как в EX_Context.
-        FieldInfo[] fields = expression.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public);
-        foreach (FieldInfo field in fields)
-        {
-            // Пропускаем поля, которые не должны сериализоваться в JSON
-            // if (field.IsDefined(typeof(JsonIgnoreAttribute), false)) continue;
-            // Пропускаем внутреннее свойство "Inst", так как мы добавляем его отдельно и в более удобном виде.
-            if (field.Name == "Inst") continue;
-
-            string fieldName = field.Name;
-            object val = field.GetValue(expression);
-
-            JToken token = SerializeProperty(val);
-            if (token != null) res.Add(fieldName, token);
-        }
+        // Гибридный подход: сначала свойства, потом поля
+        ProcessMembers(expression, res);
 
         return res;
     }
 
     /// <summary>
+    /// Общий метод для обработки свойств и полей объекта (с пропуском RawValue, Inst и служебных).
+    /// </summary>
+    private void ProcessMembers(object obj, JObject res)
+    {
+        var type = obj.GetType();
+
+        // Сначала публичные свойства
+        PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        foreach (PropertyInfo prop in properties)
+        {
+            if (IsSkippedMember(prop.Name)) continue;
+            try
+            {
+                object val = prop.GetValue(obj);
+                JToken token = SerializeProperty(val);
+                if (token != null) res.Add(prop.Name, token);
+            }
+            catch { /* Игнорируем ошибки */ }
+        }
+
+        // Потом публичные поля
+        FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
+        foreach (FieldInfo field in fields)
+        {
+            if (IsSkippedMember(field.Name)) continue;
+            try
+            {
+                object val = field.GetValue(obj);
+                JToken token = SerializeProperty(val);
+                if (token != null) res.Add(field.Name, token);
+            }
+            catch { /* Игнорируем ошибки */ }
+        }
+    }
+
+    /// <summary>
+    /// Проверяет, нужно ли пропустить член (RawValue, Inst, Tag, Token).
+    /// </summary>
+    private bool IsSkippedMember(string name)
+    {
+        return name == "RawValue" || name == "Inst" || name == "Tag" || name == "Token";
+    }
+
+    /// <summary>
     /// Вспомогательный метод, который определяет тип свойства и вызывает соответствующий метод сериализации.
     /// </summary>
-    /// <param name="property">Свойство для сериализации.</param>
-    /// <returns>JToken, представляющий свойство.</returns>
     private JToken SerializeProperty(object property)
     {
         if (property == null) return null;
 
+        // KismetExpression и наследники
         if (property is KismetExpression expression)
         {
             return SerializeExpression(expression);
         }
 
-        if (property is KismetExpression[] expressionArray)
-        {
-            JArray array = new JArray();
-            foreach (KismetExpression expr in expressionArray)
-            {
-                array.Add(SerializeExpression(expr));
-            }
-            return array;
-        }
-
-        // Обработка FPackageIndex для корректного отображения ссылок на объекты
-        if (property is FPackageIndex fPackageIndex)
-        {
-            JObject packageIndexObj = new JObject();
-            packageIndexObj.Add("Index", fPackageIndex.Index);
-            if (Asset != null)
-            {
-                var import = fPackageIndex.IsImport() && (fPackageIndex.Index * -1 - 1) < Asset.Imports.Count ? Asset.Imports[fPackageIndex.Index * -1 - 1] : null;
-                packageIndexObj.Add("ObjectName", import?.ObjectName.ToString());
-
-            }
-            return packageIndexObj;
-        }
-
         var propType = property.GetType();
+
+        // Массивы
         if (propType.IsArray)
         {
-            JArray array = new JArray();
-            foreach (var item in (Array)property)
-            {
-                array.Add(SerializeProperty(item));
-            }
-            return array;
+            return SerializeEnumerable((Array)property);
         }
 
-        // Обработка специфичных для Kismet типов, таких как KismetPropertyPointer
-        if (property is List<KismetPropertyPointer> pointers)
+        // IEnumerable (List<T>, etc.)
+        if (property is System.Collections.IEnumerable enumerable && (property is string) == false)
         {
-            JArray array = new JArray();
-            foreach (var item in pointers)
-            {
-                array.Add(JToken.FromObject(item.Old.Index));
-            }
-            return array;
+            return SerializeEnumerable(enumerable);
         }
 
-        // Обработка FName, чтобы избежать ошибки с FNameJsonConverter
+        // FPackageIndex -> просто Index как число
+        if (property is FPackageIndex fPackageIndex)
+        {
+            return new JValue(fPackageIndex.Index);
+        }
+
+        // KismetPropertyPointer и другие Kismet-объекты (не Expression)
+        if (IsKismetType(propType))
+        {
+            return SerializeKismetObject(property);
+        }
+
+        // FName
         if (property is FName fname)
         {
-            return JToken.FromObject(fname.ToString());
+            return new JValue(fname.ToString());
         }
 
-        // Для всех остальных "простых" типов (int, string, bool, enum и т.д.)
-        return JToken.FromObject(property);
+        // Простые типы
+        if (propType.IsPrimitive || propType == typeof(string) || propType == typeof(decimal))
+        {
+            return new JValue(property);
+        }
+
+        // Для всех остальных объектов (рекурсивно свойства/поля)
+        JObject objRes = new JObject();
+        string objTypeName = propType.FullName;
+        objRes.Add("$type", objTypeName + ", UAssetAPI");
+        ProcessMembers(property, objRes);
+        return objRes;
     }
 
     /// <summary>
-    /// Сериализует полный скрипт (массив KismetExpression[]) в JArray.
+    /// Проверяет, является ли тип Kismet-типом (UAssetAPI.Kismet.* но не KismetExpression).
     /// </summary>
-    /// <param name="script">Байт-код скрипта для сериализации.</param>
-    /// <returns>JArray, представляющий полный скрипт.</returns>
+    private bool IsKismetType(Type type)
+    {
+        string ns = type.Namespace;
+        return ns != null && ns.StartsWith("UAssetAPI.Kismet") && !typeof(KismetExpression).IsAssignableFrom(type);
+    }
+
+    /// <summary>
+    /// Сериализует Kismet-объект (как KismetPropertyPointer) с $type и рекурсивными полями/свойствами.
+    /// </summary>
+    private JObject SerializeKismetObject(object obj)
+    {
+        JObject res = new JObject();
+        string typeName = obj.GetType().FullName;
+        res.Add("$type", typeName + ", UAssetAPI");
+        ProcessMembers(obj, res);
+        return res;
+    }
+
+    /// <summary>
+    /// Сериализует IEnumerable в JArray.
+    /// </summary>
+    private JArray SerializeEnumerable(System.Collections.IEnumerable enumerable)
+    {
+        JArray array = new JArray();
+        foreach (var item in enumerable)
+        {
+            JToken token = SerializeProperty(item);
+            if (token != null)
+            {
+                array.Add(token);
+            }
+        }
+        return array;
+    }
+
+    /// <summary>
+    /// Сериализует массив KismetExpression в JArray (без Inst).
+    /// </summary>
+    public JArray SerializeExpressionArray(KismetExpression[] expressions)
+    {
+        if (expressions == null) return null;
+        JArray array = new JArray();
+        foreach (KismetExpression expr in expressions)
+        {
+            JToken serialized = SerializeExpression(expr);
+            if (serialized != null)
+            {
+                array.Add(serialized);
+            }
+        }
+        return array;
+    }
+
+    /// <summary>
+    /// Сериализует полный скрипт (массив KismetExpression[]) в JArray с Inst.
+    /// </summary>
     public JArray SerializeScript(KismetExpression[] script)
     {
         if (script == null) return null;
-
         JArray scriptArray = new JArray();
         foreach (KismetExpression expression in script)
         {
@@ -138,5 +213,4 @@ public class KismetExpressionSerializer
         }
         return scriptArray;
     }
-
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace Solicen.Kismet
 {
@@ -44,6 +45,20 @@ namespace Solicen.Kismet
             }
         }
 
+        #region Расширенное управление терминалом
+        static string GetRunCommand(string[] args) => Regex.Match(string.Join(" ", args), @"[[].*[]]").Value.Trim('[', ']');
+        static void RunTerminal(string anyCommand) => System.Diagnostics.Process.Start("CMD.exe", "/c " + anyCommand);
+        static string[] SplitArgs(string[] args)
+        {
+            if (GetRunCommand(args) != string.Empty)
+                return string.Join(" ", args).Replace(GetRunCommand(args), "").Split(' ').Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+            else
+                return string.Join(" ", args).Split(' ').Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+        }
+        #endregion
+
+        
+
         static void ProcessVersion(string[] args)
         {
             var arg = args.FirstOrDefault(x => x.StartsWith("--version") || x.StartsWith("--v"));
@@ -65,7 +80,7 @@ namespace Solicen.Kismet
         {
             foreach (var arg in args)
             {
-                if (!arg.StartsWith("--") || (arg.Contains("="))) continue;
+                if (!arg.StartsWith("--") || (arg.Contains("=") || (arg.StartsWith("[")))) continue;
                 var argument = arguments.Find(a => a.Name.Equals(arg, StringComparison.OrdinalIgnoreCase));
                 if (argument != null)
                 {
@@ -80,12 +95,22 @@ namespace Solicen.Kismet
             }
         }
 
+        private static string CreateDirectoryAndGetUnpackCsvPath(string file)
+        {
+            var csvFile = Path.GetFileNameWithoutExtension(file);
+            var directoryName = Path.GetFileName(Path.GetDirectoryName(file));
+            var unpackDirectory = EnvironmentHelper.CurrentAssemblyDirectory + "\\Unpack\\" + $"\\{directoryName}\\";
+            Directory.CreateDirectory(unpackDirectory);
+
+            return unpackDirectory + csvFile + ".csv";
+        }
         public static void ProcessProgram(string[] args)
         {
+            args = SplitArgs(args);
             ProcessArgs(args); ProcessVersion(args);
-            var onlyStr = args.Where(x => !x.StartsWith("--")).ToArray();
             if (args.Length > 0)
             {
+                var onlyStr = args.Where(x => !x.StartsWith("--") || !x.StartsWith("[")).ToArray();
                 if (onlyStr[0].Contains(".uasset") || args[0].Contains(".umap"))
                 {
                     var kismetFile = onlyStr.First(x => !x.Contains(".csv"));
@@ -145,13 +170,12 @@ namespace Solicen.Kismet
                         foreach (var file in files)
                         {
                             var kismetFile = file;
-                            var info = new FileInfo(kismetFile).Name;
-                            Console.WriteLine($"...{info}");
+                            var info = new FileInfo(kismetFile);
+                            Console.WriteLine($"...{info.Name}");
+
                             try
                             {
-                                var csvFile = Path.GetFileNameWithoutExtension(kismetFile);
-
-                                Solicen.Kismet.BytecodeModifier.ExtractAndWriteCSV(kismetFile, csvFile);
+                                Solicen.Kismet.BytecodeModifier.ExtractAndWriteCSV(kismetFile, CreateDirectoryAndGetUnpackCsvPath(file));
                             }
                             catch (Exception ex)
                             {
@@ -163,6 +187,12 @@ namespace Solicen.Kismet
                    
                 }
             }
+            #region Запускаем командную строку
+            var cmdArg = GetRunCommand(args);
+            if (!string.IsNullOrWhiteSpace(cmdArg)) RunTerminal(cmdArg);
+            #endregion
+
+            if (DebugMode) Console.ReadLine();
         }
 
     }

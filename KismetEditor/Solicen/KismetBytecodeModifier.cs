@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UAssetAPI;
 
 namespace Solicen.Kismet
@@ -19,16 +20,18 @@ namespace Solicen.Kismet
             var lines = File.ReadAllLines(filepath);
             foreach(var l in lines)
             {
+                if (string.IsNullOrWhiteSpace(l)) break;
                 if (l.Contains("OriginalText") && l.Contains("Translation")) continue; // Пропускаем строку заголовка
-                if (l.StartsWith("//")) continue; // Если строка начинается с символов комментирования - пропустить
+                if (l.StartsWith("/") || l.StartsWith("\\")) continue; // Если строка начинается с символов комментирования - пропустить
 
                 try
                 {
                     var values = l.Split('|');
-                    var key = values[0].Trim();
-                    var value = values[1].Trim();
-
-                    value = StringHelper.UnEscapeKey(value);
+                    var key = values[0];
+                    var value = values[1];
+                    
+                    key = StringHelper.Unescape(key);
+                    value = StringHelper.Unescape(value);
 
                     try { if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value)) csvValues.Add(key, value); }
                     catch (Exception ex) { Console.WriteLine($"[{key}] Элемент с таким ключом уже был добавлен."); }
@@ -37,9 +40,6 @@ namespace Solicen.Kismet
                 {
 
                 }
-
-
-
 
             }
             return csvValues;
@@ -55,16 +55,19 @@ namespace Solicen.Kismet
             if (ProgramProcessor.DebugMode)
             {
                 var _dummyJson = KismetExtension.GetUbergraphJson(asset); //JsonConvert.SerializeObject(ubergraph, Formatting.Indented);
-                File.WriteAllText($"{Environment.CurrentDirectory}\\{Path.GetFileNameWithoutExtension(assetPath)}_DUMMY.json", _dummyJson.ToString());
+                var serializer = new KismetExpressionSerializer(asset);
+                var u = KismetExtension.GetUbergraph(asset);
+
+                File.WriteAllText($"{Environment.CurrentDirectory}\\{Path.GetFileNameWithoutExtension(assetPath)}_DUMMY.json", serializer.SerializeExpressionArray(u).ToString());
 
             }
 
             var strings = MapParser.ParseAsCSV(ubergraph);
-            _fileName = _fileName == "" ? Path.GetFileNameWithoutExtension(assetPath) : _fileName;
+            _fileName = _fileName == string.Empty ? Path.GetFileNameWithoutExtension(assetPath) : _fileName;
             if (strings.Length == 0) return;
 
             #region Запись CSV
-            var csvFilePath = $"{Environment.CurrentDirectory}\\{_fileName}.csv";
+            var csvFilePath = _fileName.EndsWith(".csv") ? _fileName : _fileName + ".csv";
             Console.WriteLine($"Write CSV to {csvFilePath}");
             if (File.Exists(csvFilePath))
             {
