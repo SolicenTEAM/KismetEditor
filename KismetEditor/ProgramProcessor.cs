@@ -51,7 +51,7 @@ namespace Solicen.Kismet
         static void RunTerminal(string anyCommand) => System.Diagnostics.Process.Start("CMD.exe", "/c " + anyCommand);
         static string[] SplitArgs(string[] args)
         {
-            var regex = new Regex(@"[""](\w.*?)[""]|[[](.*?)[]]");
+            var regex = new Regex(@"[""](.*?)[""]|[[](.*?)[]]");
             var matches = regex.Matches(string.Join(" ", args.Select(x => $"\"{x}\"")));
             return matches.Cast<Match>().Select(m => m.Groups[1].Value.ToString()).Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
         }
