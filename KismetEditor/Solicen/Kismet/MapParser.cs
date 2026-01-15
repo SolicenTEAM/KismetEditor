@@ -51,12 +51,12 @@ namespace Solicen.Kismet
             foreach (var value in objects)
             {
                 Console.WriteLine($" - {value.Value.Escape()}");
-                csvLines.Add($"{value.Value.Escape()}|");
+                csvLines.Add($"{value.Value.Escape()}");
             }
             return csvLines.ToArray();
         }
 
-        public static string[] ParseUbergraphAsCSV(JArray jArray)
+        public static string[] ParseUbergraph(JArray jArray)
         {
             HashSet<string> kismetValues = new HashSet<string>(CreateMap(jArray, null, true).Select(x => x.Value));
             HashSet<string> csvLines = new HashSet<string>();
@@ -66,7 +66,7 @@ namespace Solicen.Kismet
                 foreach (var value in kismetValues)
                 {
                     Console.WriteLine($" - {value.Escape()}");
-                    csvLines.Add($"{value.Escape()}|");
+                    csvLines.Add($"{value.Escape()}");
                 }
             }
             return csvLines.ToArray();

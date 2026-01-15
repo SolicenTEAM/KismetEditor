@@ -12,37 +12,8 @@ namespace Solicen.Kismet
 {
     class BytecodeModifier
     {
-        public static UAsset Asset;
+        public static UAsset Asset; static bool UseBak = true;
         public static UAssetAPI.UnrealTypes.EngineVersion Version = UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_18;
-
-        public static Dictionary<string,string> TranslateFromCSV(string filepath)
-        {
-            Dictionary<string, string> csvValues = new Dictionary<string, string>();
-            var lines = File.ReadAllLines(filepath);
-            foreach(var l in lines)
-            {
-                if (string.IsNullOrWhiteSpace(l)) break;
-                if (l.Contains("OriginalText") && l.Contains("Translation")) continue; // Пропускаем строку заголовка
-                if (l.StartsWith("/") || l.StartsWith("\\")) continue; // Если строка начинается с символов комментирования - пропустить
-
-                try
-                {
-                    var values = l.Split('|');
-                    var key = values[0].Unescape();
-                    var value = values[1].Unescape();
-                    try { if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value)) csvValues.Add(key, value); }
-                    catch (Exception ex) { Console.WriteLine($"[{key}] An element with this key has already been added."); }
-                }
-                catch
-                {
-
-                }
-
-            }
-            return csvValues;
-        }
-
-        static bool UseBak = true;
         public static void ModifyAsset(string path, Dictionary<string, string> replacement, bool allowTable = false)
         {
             if (UseBak)

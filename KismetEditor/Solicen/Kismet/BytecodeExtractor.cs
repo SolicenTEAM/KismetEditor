@@ -14,6 +14,8 @@ namespace Solicen.Kismet
         public static bool AllowTableExtract = false;
         public static UAsset Asset;
         public static UAssetAPI.UnrealTypes.EngineVersion Version = UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_18;
+
+        public static void ExtractAllAndWriteUberJSON(string asset) => ExtractAllAndWriteUberJSON(new string[] { asset });
         public static void ExtractAllAndWriteUberJSON(string[] assets)
         {
             var JsonFilePath = $"{EnvironmentHelper.CurrentAssemblyDirectory}\\UberJSON.json";
@@ -28,7 +30,7 @@ namespace Solicen.Kismet
                 if (strings.Length > 0)
                 {
                     var uberJSON = new UberJSON(FileName);
-                    uberJSON.AddRange(strings.Select(x => x.TrimEnd('|')).ToArray());
+                    uberJSON.AddRange(strings.ToArray());
                     uberJSONCollection.Add(uberJSON);
                 }
             }
@@ -102,7 +104,7 @@ namespace Solicen.Kismet
                         serializer.SerializeExpressionArray(u).ToString());
 
                 }
-                return MapParser.ParseUbergraphAsCSV(ubergraph);
+                return MapParser.ParseUbergraph(ubergraph);
             }
             else
             {

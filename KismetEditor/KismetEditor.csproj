@@ -231,26 +231,28 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ProgramProcessor.cs" />
-    <Compile Include="Solicen\BytecodeExtractor.cs" />
+    <Compile Include="Solicen\Kismet\BytecodeExtractor.cs" />
     <Compile Include="Solicen\Helpers\EnviromentHelper.cs" />
     <Compile Include="Solicen\JSON\UberJSON.cs" />
-    <Compile Include="Solicen\KismetProcessor.cs" />
-    <Compile Include="Solicen\KismetBytecodeModifier.cs" />
+    <Compile Include="Solicen\Kismet\KismetProcessor.cs" />
+    <Compile Include="Solicen\Kismet\KismetBytecodeModifier.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Solicen\Kismet\InstructionSizeCalculator.cs" />
     <Compile Include="Solicen\Kismet\MapParser.cs" />
     <Compile Include="Solicen\Kismet\OffsetCalculator.cs" />
-    <Compile Include="Solicen\Serializer\KismetExpressionSerializer.cs" />
-    <Compile Include="Solicen\KismetExtension.cs" />
-    <Compile Include="Solicen\KismetBytecode.cs" />
+    <Compile Include="Solicen\Kismet\Serializer\KismetExpressionSerializer.cs" />
+    <Compile Include="Solicen\Kismet\KismetExtension.cs" />
+    <Compile Include="Solicen\Kismet\KismetBytecode.cs" />
     <Compile Include="Solicen\Kismet\LObject.cs" />
     <Compile Include="Solicen\Helpers\StringHelper.cs" />
+    <Compile Include="Solicen\Translator\TranslateManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

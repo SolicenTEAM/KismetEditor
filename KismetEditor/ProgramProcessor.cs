@@ -1,4 +1,5 @@
-﻿using Solicen.JSON;
+﻿using Newtonsoft.Json;
+using Solicen.JSON;
 using Solicen.Translator;
 using System;
 using System.Collections.Generic;
@@ -13,18 +14,17 @@ namespace Solicen.Kismet
     class ProgramProcessor
     {
         public static bool DebugMode = false;
-        private static bool AllowTable = false, AllowTranslate, isExtract = true, packFiles = false, ConvertFile = false;
+        private static bool AllowTable = false, AllowTranslate, isExtract = true, packFiles = false;
         public static UAssetAPI.UnrealTypes.EngineVersion Version = UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_18;
 
         private static readonly string[] AllowedExtensionForAsset = new string[] { ".uasset", ".umap" };
         static List<Argument> arguments = new List<Argument>
         {
             new Argument("--translate", "online translate all values", () => AllowTranslate = true),
-            new Argument("--all", "allow extract all values", () => { MapParser.AllowLocalizedSource = true; MapParser.AllowUnderscore = true; AllowTable = true; }),
+            new Argument("--all", "allow extract all values", () => { MapParser.AllowLocalizedSource = true; AllowTable = true; }),
             new Argument("--table", "allow extract StringTable values (.locres)", () => AllowTable = true),
             new Argument("--localized", "allow extract LocalizedSource values (.locres)", () => MapParser.AllowLocalizedSource = true),
             new Argument("--underscore", "allow underscore in values to extracts", () => MapParser.AllowUnderscore = true),
-            new Argument("--convert", "[CSV=>JSON] auto convert old csv file to UberJSON format", () => ConvertFile = true),
             new Argument("--pack", "[Directory] pack translate from csv to files in directory", () => packFiles=true),
             new Argument("--debug", "[File] write additional files for debug",() => DebugMode = true),
             new Argument("--version", "[Utility] set specific unreal version: --version=4.18",null),
@@ -65,11 +65,30 @@ namespace Solicen.Kismet
         }
         #endregion
 
-        static void ProcessTranslator(string[] args)
+
+        static void ProcessTranslator()
         {
-            var langFromArg = args.FirstOrDefault(x => x.StartsWith("--langf") || x.StartsWith("-lf"));
-            var langToArg = args.FirstOrDefault(x => x.StartsWith("--langt") || x.StartsWith("-lt"));
-            var endpointArg = args.FirstOrDefault(x => x.StartsWith("--endpoint") || x.StartsWith("-e"));
+            var JsonFilePath = EnvironmentHelper.CurrentAssemblyDirectory + "\\UberJSON.json";
+            if (System.IO.File.Exists(JsonFilePath))
+            {
+                var uber = UberJSONProcessor.ReadFile(JsonFilePath);
+                var manager = new TranslateManager();
+                for (int i = 0; i < uber.Length; i++)
+                {
+                    var dict = uber[i].GetValues();
+                    manager.TranslateLines(ref dict);
+                    uber[i].Clear();
+                    uber[i].AddRange(dict);
+                }
+                System.IO.File.WriteAllText(JsonFilePath, JsonConvert.SerializeObject(uber, Formatting.Indented).ToString());
+
+            }
+        }
+        static void ProcessTranslatorArgs(string[] args)
+        {
+            var langFromArg = args.FirstOrDefault(x => x.StartsWith("--langf") || x.StartsWith("--lf"));
+            var langToArg = args.FirstOrDefault(x => x.StartsWith("--langt") || x.StartsWith("--lt"));
+            var endpointArg = args.FirstOrDefault(x => x.StartsWith("--endpoint") || x.StartsWith("--e"));
             try
             {
                 if (!string.IsNullOrWhiteSpace(langFromArg))
@@ -157,21 +176,20 @@ namespace Solicen.Kismet
                 if (IsAsset(onlyArgs[0]))
                 {
                     Console.WriteLine("[Extract mode]\n");
-                    var kismetFile = onlyArgs.First(x => !x.Contains(".csv"));
+                    var assetFile = onlyArgs.First(x => !x.Contains(".csv") && !x.Contains(".json"));
                     var csvFile = onlyArgs.Count() >1 ? onlyArgs.FirstOrDefault(x => x.Contains(".csv"))
-                        : Path.GetFileNameWithoutExtension(kismetFile);
+                        : Path.GetFileNameWithoutExtension(assetFile);
                     BytecodeExtractor.AllowTableExtract = AllowTable;
-                    BytecodeExtractor.ExtractAndWriteCSV(kismetFile, csvFile);
+                    BytecodeExtractor.ExtractAllAndWriteUberJSON(assetFile);
                 }
                 else if (onlyArgs[0].Contains(".csv") || onlyArgs[0].Contains(".json"))
                 {
-                    var assetFile = onlyArgs.FirstOrDefault(x => !x.Contains(".csv"));
+                    var assetFile = onlyArgs.FirstOrDefault(x => IsAsset(x));
                     var csvFile = onlyArgs.FirstOrDefault(x => x.Contains(".csv"));
                     var uberJson = onlyArgs.FirstOrDefault(x => x.Contains(".json"));
 
                     if (string.IsNullOrWhiteSpace(assetFile))
                     {
-
                         Console.WriteLine("Drag & Drop UE file (.uasset|.umap) and press ENTER");
                         assetFile = Console.ReadLine().Trim('\"');
                         if (!IsAsset(assetFile))
@@ -180,21 +198,10 @@ namespace Solicen.Kismet
                             Console.ReadLine(); Environment.Exit(1);
                         }
                     }
-                    if (csvFile != null)
                     {
-                        // Если аргумент содержит .csv файл - запускаем замену строк
                         Console.WriteLine("[Replacement mode]");
-                        var csv = Kismet.BytecodeModifier.TranslateFromCSV(csvFile);
-                        Kismet.BytecodeModifier.ModifyAsset(assetFile, csv, AllowTable);
-                    }
-                    else if (uberJson != null)
-                    {
-                        // Если аргумент содержит .csv файл - запускаем замену строк
-                        Console.WriteLine("[Replacement mode]");
-                        var json = Kismet.BytecodeModifier.TranslateFromCSV(csvFile);
-                        var uberJSONCollection = JSON.UberJSONProcessor.Deserialize(uberJson);
-
-                        var uber = uberJSONCollection.FirstOrDefault(x => x.FileName == Path.GetFileName(assetFile));
+                        var uberJSONCollection = csvFile != null ? JSON.UberJSONProcessor.Convert(csvFile) : JSON.UberJSONProcessor.ReadFile(uberJson);
+                        var uber = uberJSONCollection.FirstOrDefault(x => Path.GetFileNameWithoutExtension(x.FileName) == Path.GetFileNameWithoutExtension(assetFile));
                         if (uber != null)
                         {
                             var values = uber.GetValues();
@@ -225,52 +232,31 @@ namespace Solicen.Kismet
                         else
                         {
                             var csvFiles = Directory.GetFiles($@"{other}", "*", SearchOption.AllDirectories).Where(x => x.EndsWith(".csv"));
-                            foreach (var csv in csvFiles)
+                            foreach (var csvFile in csvFiles)
                             {
-                                var asset = files.FirstOrDefault(x => Path.GetFileNameWithoutExtension(x) == Path.GetFileNameWithoutExtension(csv));
-                                var FromCSV = Kismet.BytecodeModifier.TranslateFromCSV(csv);
-                                Kismet.BytecodeModifier.ModifyAsset(asset, FromCSV, AllowTable);
+                                var assetFile = files.FirstOrDefault(x => Path.GetFileNameWithoutExtension(x) == Path.GetFileNameWithoutExtension(csvFile));
+                                var uberJSONCollection = JSON.UberJSONProcessor.Convert(csvFile);
+                                var uber = uberJSONCollection.FirstOrDefault(x => x.FileName == Path.GetFileName(assetFile));
+                                if (uber != null)
+                                {
+                                    var values = uber.GetValues();
+                                    Kismet.BytecodeModifier.ModifyAsset(assetFile, values, AllowTable);
+                                }
                             }
                         }
                     }
                     else
                     {
                         Console.WriteLine("[Extract mode]\n");
-                        switch (ExtractionType)
-                        {
-                            case ExtractionType.CSV:
-                                {
-                                    Console.WriteLine("------ [CSV] ------");
-                                    foreach (var file in files)
-                                    {
-                                        GC.Collect(2);
-                                        var info = new FileInfo(file);
-                                        Console.WriteLine($"[INF] ...{info.Name}");
-                                        Kismet.BytecodeExtractor.AllowTableExtract = AllowTable;
-                                        Kismet.BytecodeExtractor.ExtractAndWriteCSV(file, GetUnpackCsvPath(file));
-                                    }
-                                    foreach (var dir in Directory.GetDirectories(GetUnpackCsvPath("")))
-                                    {
-                                        DirectoryInfo dirInfo = new DirectoryInfo(dir);
-                                        if (dirInfo.GetFiles().Length == 0 && dirInfo.GetDirectories().Length == 0)
-                                            Directory.Delete(dir);
-                                    }
-                                }
-                                break;
-                            case ExtractionType.JSON:
-                                {
-                                    Console.WriteLine("------ [UberJSON] ------");
-                                    Kismet.BytecodeExtractor.AllowTableExtract = AllowTable;
-                                    Kismet.BytecodeExtractor.ExtractAllAndWriteUberJSON(files);
-                                }
-                                break;
-                        }
-
-                    }                       
+                        Console.WriteLine("------ [UberJSON] ------");
+                        Kismet.BytecodeExtractor.AllowTableExtract = AllowTable;
+                        Kismet.BytecodeExtractor.ExtractAllAndWriteUberJSON(files);
+                    }                      
                 }
             }
 
             #region Запускаем автоматический перевод
+            if (AllowTranslate) ProcessTranslator();
             #endregion
 
             #region Запускаем командную строку

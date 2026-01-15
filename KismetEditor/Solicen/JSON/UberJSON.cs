@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,9 +33,8 @@ namespace Solicen.JSON
             foreach (var l in lines)
             {
                 if (string.IsNullOrWhiteSpace(l)) continue;
-                if (l.Contains("OriginalText") && l.Contains("Translation") || l.StartsWith("\\")) continue; 
-                // Пропускаем строку заголовка и если строка начинается с символов комментирования - пропустить
-                
+                if (l.Contains("OriginalText") && l.Contains("Translation") || l.StartsWith("//")) continue; 
+                // Пропускаем строку заголовка и если строка начинается с символов комментирования - пропустить             
                 try
                 {
                     var values = l.Split(separator);
@@ -45,7 +45,7 @@ namespace Solicen.JSON
                 }
                 catch
                 {
-
+                    uberJSON.Add(new KismetString(l, ""));
                 }
             }
             return new UberJSON[] { uberJSON };
@@ -67,7 +67,7 @@ namespace Solicen.JSON
             {
                 try
                 {
-                    if (!string.IsNullOrWhiteSpace(value.NewValue)) values.Add(value.Original, value.NewValue);
+                    if (!string.IsNullOrWhiteSpace(value.Original)) values.Add(value.Original, value.NewValue);
                 }
                 catch { }
 

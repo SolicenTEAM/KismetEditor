@@ -1,10 +1,14 @@
 ﻿using GTranslate;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using UAssetAPI.ExportTypes;
 
 namespace Solicen.Translator
 {
@@ -19,22 +23,34 @@ namespace Solicen.Translator
         public static string LanguageFrom = "en";
         public static string Endpoint = "Yandex";
 
-        public async void TranslateLines(Dictionary<string, string> values, IProgress<Tuple<int, int>> progress = null, bool showWaringMsg = false, int delayBetweenMsg = 50)
+        public void TranslateLines(ref Dictionary<string, string> values, IProgress<Tuple<int, int>> progress = null, bool showWaringMsg = false, int delayBetweenMsg = 250)
         {
-            int SegmentIndex = 1;
+            int SegmentIndex = 1; Dictionary<string, string> result = new Dictionary<string, string>();
             int nullSegments = values.Where(s => string.IsNullOrWhiteSpace(s.Value)).ToArray().Length;
             Console.WriteLine($"[Translator] : Prepare to change : [{nullSegments}]");
-            foreach (var value in values)
-            {
-                Console.WriteLine($"[Translator] : [{SegmentIndex}/{nullSegments}] : [{Endpoint[0].ToString().ToUpper()}] : {value.Key}");
-                if (string.IsNullOrWhiteSpace(value.Value))
+            foreach (var entry in values)
+            {   
+                if (string.IsNullOrEmpty(entry.Value))
                 {
-                    var translated = await TranslateValue(value.Key);
-                    SegmentIndex++;
+                    var translatedValue =TranslateValue(entry.Key).Result; 
                     if (progress != null) progress.Report(new Tuple<int, int>(SegmentIndex, nullSegments));
-                    await Task.Delay(delayBetweenMsg);
+                    if (!string.IsNullOrEmpty(translatedValue))
+                    {
+                        Console.WriteLine($"[{SegmentIndex}/{nullSegments}] : [{Endpoint[0].ToString().ToUpper()}] : '{entry.Key}' => '{translatedValue.Escape()}'");
+                        result.Add(entry.Key, translatedValue.Escape());
+                    }
+                    else
+                        result.Add(entry.Key, entry.Value);
+
+                    Thread.Sleep(delayBetweenMsg); SegmentIndex++;
+                    //await Task.Delay(delayBetweenMsg);
+                }
+                else
+                {
+                    result.Add(entry.Key, entry.Value);
                 }
             }
+            values = result;
         }
 
         public async Task<string> TranslateValue(string SourceText)
