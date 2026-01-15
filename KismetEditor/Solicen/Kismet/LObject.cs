@@ -19,6 +19,7 @@ namespace Solicen.Kismet
         public string Instruction { get; }
         public int Offset { get; }
         public int InstructionSize { get; }
+        public string FileName { get; set; }
 
         public LObject(int statementIndex, string value, string instruction, int offset, int instructionSize)
         {

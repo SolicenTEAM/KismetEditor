@@ -19,21 +19,55 @@ namespace KismetEditor.Solicen
     internal class KismetProcessor
     {
         public static bool DebugMode = true;
-        public static int ModifiedInstCount = 0;
+        public static int ModifiedCount = 0;
         public static UAsset asset;
-
 
         internal const int MAGIC_TES = 200519; // | 20 | 05 | 19 | To   End Script 
         internal const int MAGIC_FES = 060519; // | 06 | 05 | 19 | From End Script
 
-        public static void ReplaceAll(JObject assetJsonObject, Dictionary<string, string> replacement, UAsset _asset)
+        public static void ReplaceAllInStrProperties(Dictionary<string, string> replacement, UAsset _asset)
         {
             asset = _asset;
             Console.WriteLine("\n[INF] Starting a new replacement process...");
             foreach (var entry in replacement)
             {
-                string replaceFrom = entry.Key;
-                string replaceTo = entry.Value;
+                string replaceFrom = entry.Key; string replaceTo = entry.Value;
+                Console.WriteLine($"\n--- String processing: '{replaceFrom.Escape()}' ---");
+                var replaced = MapParser.ReplaceStrProperty(asset, replaceFrom, replaceTo);
+                if (replaced != 0) 
+                {
+                    Console.WriteLine($"[INF] Occurrence of '{replaceFrom.Escape()}' has been replaced. Search for the next one...");
+                    ModifiedCount += replaced;
+                } 
+                Console.WriteLine($"--- Line processing completed: '{replaceFrom.Escape()}' ---");
+            }
+        }
+
+        public static void ReplaceAllInStringTable(Dictionary<string, string> replacement, UAsset _asset)
+        {
+            asset = _asset;
+            Console.WriteLine("\n[INF] Starting a new replacement process...");
+            foreach (var entry in replacement)
+            {
+                string replaceFrom = entry.Key; string replaceTo = entry.Value;
+                Console.WriteLine($"\n--- String processing: '{replaceFrom.Escape()}' ---");
+                var replaced = MapParser.ReplaceStringTableEntry(asset, entry.Key, entry.Value);
+                if (replaced != 0)
+                {
+                    Console.WriteLine($"[INF] Occurrence of '{replaceFrom.Escape()}' has been replaced. Search for the next one...");
+                    ModifiedCount += replaced;
+                }
+                Console.WriteLine($"--- Line processing completed: '{replaceFrom.Escape()}' ---");
+            }
+        }
+
+        public static void ReplaceAllInUbergraph(JObject assetJsonObject, Dictionary<string, string> replacement, UAsset _asset)
+        {
+            asset = _asset;
+            Console.WriteLine("\n[INF] Starting a new replacement process...");
+            foreach (var entry in replacement)
+            {
+                string replaceFrom = entry.Key; string replaceTo = entry.Value;
                 Console.WriteLine($"\n--- String processing: '{replaceFrom.Escape()}' ---");
 
                 // Заменяем все вхождения этой строки, пока они находятся
@@ -184,7 +218,7 @@ namespace KismetEditor.Solicen
                         scriptBytecodeArray.Add(statement);
                         scriptBytecodeArray.Add(returnJump);
                         Console.WriteLine("[INF] Step 5: The modified instruction and the jump (FES) added to the end.");
-                        ModifiedInstCount++;
+                        ModifiedCount++;
 
                         return true; // Замена произведена, выходим из рекурсии
                     }

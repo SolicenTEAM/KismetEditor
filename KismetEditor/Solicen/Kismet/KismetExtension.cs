@@ -71,6 +71,7 @@ namespace Solicen.Kismet
 
             return ubergraphExport?["ScriptBytecode"] as JArray;
         }
+
         public static KismetExpression[] GetUbergraph(UAsset asset)
         {
             var ubergraph = asset.Exports.FirstOrDefault(x => x.ObjectName.ToString().StartsWith("ExecuteUbergraph"));

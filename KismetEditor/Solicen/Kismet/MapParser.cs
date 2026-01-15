@@ -7,6 +7,9 @@ using UAssetAPI;
 using UAssetAPI.Kismet;
 using UAssetAPI.Kismet.Bytecode;
 using UAssetAPI.UnrealTypes;
+using UAssetAPI.PropertyTypes.Objects;
+using Newtonsoft.Json;
+using System.Xml.Linq;
 namespace Solicen.Kismet
 {
     /// <summary>
@@ -17,6 +20,12 @@ namespace Solicen.Kismet
     {
         // Нам нужен доступ к ассету для работы сериализатора
         private static UAsset uAsset;
+
+        public static bool AllowLocalizedSource = false;
+        private static bool IsLocalizedSource(string name) => AllowLocalizedSource ? false : name == "LocalizedSource";
+
+        public static bool AllowUnderscore = false;
+        private static bool IsContainsUnderscore(string str) => AllowUnderscore ? false : str.Contains("_"); 
 
         /// <summary>
         /// Создает карту инструкций из JArray уберграфа.
@@ -35,19 +44,163 @@ namespace Solicen.Kismet
             return kismets.ToArray();
         }
 
-        public static string[] ParseAsCSV(JArray jArray)
+        // Метод для работы с StrProperty обьектами и иными
+        public static string[] ParseAsCSV(LObject[] objects)
         {
-            var kismetValues = new HashSet<string>(CreateMap(jArray, null, true).Select(x => x.Value));
-
             HashSet<string> csvLines = new HashSet<string>();
-            foreach (var value in kismetValues)
+            foreach (var value in objects)
             {
-                Console.WriteLine($" - {value.Escape()}");
-                csvLines.Add($"{value.Escape()}|");
+                Console.WriteLine($" - {value.Value.Escape()}");
+                csvLines.Add($"{value.Value.Escape()}|");
             }
             return csvLines.ToArray();
         }
 
+        public static string[] ParseUbergraphAsCSV(JArray jArray)
+        {
+            HashSet<string> kismetValues = new HashSet<string>(CreateMap(jArray, null, true).Select(x => x.Value));
+            HashSet<string> csvLines = new HashSet<string>();
+            if (kismetValues.Count > 0)
+            {
+                Console.WriteLine("------- [Ubergraph] -------");
+                foreach (var value in kismetValues)
+                {
+                    Console.WriteLine($" - {value.Escape()}");
+                    csvLines.Add($"{value.Escape()}|");
+                }
+            }
+            return csvLines.ToArray();
+        }
+
+        /// <summary>
+        /// Извлекает все значения из StrProperty во всех экспортах ассета.
+        /// </summary>
+        /// <param name="asset">Ассет для сканирования.</param>
+        /// <returns>Массив LObject с найденными строками.</returns>
+        public static LObject[] ExtractStrProperties(UAsset asset)
+        {
+            var results = new List<LObject>();
+            if (asset == null) return results.ToArray();
+
+            for (int i = 0; i < asset.Exports.Count; i++)
+            {
+                if (asset.Exports[i] is UAssetAPI.ExportTypes.NormalExport normalExport)
+                {
+                    foreach (var prop in normalExport.Data)
+                    {
+                        if (prop is StrPropertyData strProp && strProp.Value != null)
+                        {
+                            string value = strProp.Value.Value;
+                            if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2 || value.Contains("_") || value == "None" || int.TryParse(value, out _) || value.IsGUID()) continue;
+                            results.Add(new LObject(i, value, "StrProperty", 0, 0));
+                        }
+                    }
+                }
+            }
+            return results.ToArray();
+        }
+
+        /// <summary>
+        /// Извлекает все значения из StringTable.
+        /// </summary>
+        /// <param name="asset">Ассет StringTable для сканирования.</param>
+        /// <returns>Массив LObject с найденными строками.</returns>
+        public static LObject[] ExtractStringTableEntries(UAsset asset)
+        {
+            var results = new List<LObject>();
+            if (asset == null) return results.ToArray();
+
+            for (int i = 0; i < asset.Exports.Count; i++)
+            {
+                if (asset.Exports[i] is UAssetAPI.ExportTypes.StringTableExport stringTableExport)
+                {
+                    foreach (var entry in stringTableExport.Table)
+                    {
+                        // entry.Key - это ключ локализации, entry.Value - это исходный текст.
+                        string value = entry.Value.Value;
+                        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2 || value.Contains("_") || value == "None" || int.TryParse(value, out _) || value.IsGUID()) continue;
+                        
+                        // В LObject мы сохраняем исходный текст как Value, а ключ локализации как Instruction, чтобы использовать его при замене.
+                        results.Add(new LObject(i, value, entry.Key.Value, 0, 0));
+                    }
+                }
+            }
+            return results.ToArray();
+        }
+
+        /// <summary>
+        /// Заменяет запись в StringTable по ключу.
+        /// </summary>
+        /// <param name="asset">Ассет StringTable для модификации.</param>
+        /// <param name="exportIndex">Индекс экспорта StringTable.</param>
+        /// <param name="key">Ключ строки, которую нужно заменить.</param>
+        /// <param name="newValue">Новое строковое значение.</param>
+        /// <returns>True, если замена прошла успешно.</returns>
+        public static int ReplaceStringTableEntry(UAsset asset, string originalValue, string newValue)
+        {
+            if (asset == null || string.IsNullOrWhiteSpace(newValue)) return 0;
+            int replacementCount = 0;
+            foreach (var export in asset.Exports)
+            {
+                if (export is UAssetAPI.ExportTypes.StringTableExport stringTableExport)
+                {
+                    foreach(var entry in stringTableExport.Table)
+                    {
+                        if (entry.Value.Value == originalValue)
+                        {
+                            entry.Value.Value = newValue;
+                            entry.Value.Encoding = System.Text.Encoding.Unicode;
+                            replacementCount++;
+                        }
+                    }
+                }
+            }
+
+            return replacementCount;
+        }
+
+        /// <summary>
+        /// Заменяет все вхождения указанной строки в StrProperty по всему ассету.
+        /// </summary>
+        /// <param name="asset">Ассет для модификации.</param>
+        /// <param name="originalValue">Оригинальное строковое значение для поиска.</param>
+        /// <param name="newValue">Новое строковое значение для установки.</param>
+        /// <returns>Количество произведенных замен.</returns>
+        public static int ReplaceStrProperty(UAsset asset, string originalValue, string newValue)
+        {
+            if (asset == null || string.IsNullOrWhiteSpace(newValue)) return 0;
+            int replacementCount = 0;
+            foreach (var export in asset.Exports)
+            {
+                if (export is UAssetAPI.ExportTypes.NormalExport normalExport)
+                {
+                    // Мы не можем изменять коллекцию во время итерации, поэтому создаем копию для поиска
+                    var propertiesToModify = normalExport.Data
+                        .Where(p => p is StrPropertyData strProp && strProp.Value?.Value == originalValue)
+                        .ToList();
+
+                    foreach (var prop in propertiesToModify)
+                    {
+                        var strProp = (StrPropertyData)prop;
+
+                        // Создаем новое свойство с тем же именем, но новым Unicode-значением
+                        var newProp = new StrPropertyData(strProp.Name)
+                        {
+                            Value = new FString(newValue)
+                        };
+
+                        // Находим индекс старого свойства, удаляем его и вставляем на его место новое
+                        int index = normalExport.Data.IndexOf(strProp);
+                        if (index == -1) continue;
+
+                        normalExport.Data.RemoveAt(index);
+                        normalExport.Data.Insert(index, newProp);
+                        replacementCount++;
+                    }
+                }
+            }
+            return replacementCount;
+        }
         private static void ParseRecursively(JToken token, List<LObject> kismets, bool onlyString)
         {
             if (onlyString)
@@ -127,7 +280,6 @@ namespace Solicen.Kismet
         {
             if (token is JObject obj)
             {
-                bool isLocalized = (obj.TryGetValue("LocalizedSource", out var localToken));
                 bool isStringConst = (obj.TryGetValue("$type", out var typeToken) && typeToken.ToString().Contains("StringConst")) ||
                                      (obj.TryGetValue("Inst", out var instToken) && instToken.ToString().Contains("StringConst"));
 
@@ -141,19 +293,23 @@ namespace Solicen.Kismet
                     JToken valueToken = obj["Value"] ?? obj["RawValue"];
                     if (valueToken != null && valueToken.Type == JTokenType.String)
                     {
+                        var valueName = "StringConst";
                         // Проверяем, не является ли эта строка частью данных для локализации (.locres)
                         if (token.Parent is JProperty parentProperty)
                         {
-                            if (parentProperty.Name == "LocalizedSource" || parentProperty.Name == "LocalizedKey" || parentProperty.Name == "LocalizedNamespace")
+                            bool isLocalized = IsLocalizedSource(parentProperty.Name);
+                            if (IsLocalizedSource(parentProperty.Name))
                             {
-                                return; // Пропускаем эту строку
+                                if (!AllowLocalizedSource) return; // Пропускаем эту строку
+                                else valueName = parentProperty.Name;
                             }
+                            if (parentProperty.Name == "LocalizedKey" || parentProperty.Name == "LocalizedNamespace")
+                                    return;
                         }
-
                         string value = valueToken.ToString();
                         if (token.Ancestors().Any(a => a is JProperty p && p.Name == "AssignmentExpression")) return;
                         if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2 || value.Contains("_") || value == "None" || int.TryParse(value, out _) || value.IsGUID()) return;
-                        kismets.Add(new LObject(statementIndex, value, "StringConst", offset, 0)); 
+                        kismets.Add(new LObject(statementIndex, value, valueName, offset, 0)); 
                     }
                 }
 

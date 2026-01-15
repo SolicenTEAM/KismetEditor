@@ -1,17 +1,18 @@
 ﻿using KismetEditor.Solicen;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Solicen.JSON;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UAssetAPI;
 
 namespace Solicen.Kismet
 {
     class BytecodeModifier
     {
+        public static UAsset Asset;
         public static UAssetAPI.UnrealTypes.EngineVersion Version = UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_18;
 
         public static Dictionary<string,string> TranslateFromCSV(string filepath)
@@ -41,47 +42,8 @@ namespace Solicen.Kismet
             return csvValues;
         }
 
-        public static void ExtractAndWriteCSV(string assetPath, string _fileName = "")
-        {
-            UAsset asset = new UAsset(assetPath, Version);
-            var json = asset.SerializeJson(Newtonsoft.Json.Formatting.Indented);
-            var ubergraph = KismetExtension.GetUbergraphSerialized(asset);
-
-            if (ProgramProcessor.DebugMode)
-            {
-                var _dummyJson = KismetExtension.GetUbergraphJson(asset); //JsonConvert.SerializeObject(ubergraph, Formatting.Indented);
-                var serializer = new KismetExpressionSerializer(asset);
-                var u = KismetExtension.GetUbergraph(asset);
-
-                File.WriteAllText($"{Environment.CurrentDirectory}\\{Path.GetFileNameWithoutExtension(assetPath)}_DUMMY.json", serializer.SerializeExpressionArray(u).ToString());
-
-            }
-            var strings = MapParser.ParseAsCSV(ubergraph);
-            _fileName = _fileName == string.Empty ? Path.GetFileNameWithoutExtension(assetPath) : _fileName;
-            if (strings.Length == 0) return;
-
-            #region Запись CSV
-            var csvFilePath = _fileName.EndsWith(".csv") ? _fileName : $"{EnvironmentHelper.CurrentAssemblyDirectory}\\{_fileName}.csv";
-            Console.WriteLine($"[SUCCESS] File with extracted strings was successfully saved in: {csvFilePath}\n");
-            if (File.Exists(csvFilePath))
-            {
-                // Если CSV уже существует, просто добавить новые строки
-                var csv = File.ReadAllLines(csvFilePath);
-                var lines = strings.Except(csv.Select(x => x.Split('|')[0])); lines.ToList().Add("\n");
-                File.AppendAllLines(csvFilePath, lines);
-            }           
-            else
-            {
-                // Иначе просто записать строки в файл
-                File.WriteAllText(csvFilePath, string.Join("\n", strings));
-            }
-
-            #endregion
-        }
-
-
         static bool UseBak = true;
-        public static void ModifyAsset(string path, Dictionary<string, string> replacement)
+        public static void ModifyAsset(string path, Dictionary<string, string> replacement, bool allowTable = false)
         {
             if (UseBak)
             {
@@ -91,25 +53,27 @@ namespace Solicen.Kismet
                     File.Copy(uexpPath+".bak", uexpPath, true);
                     File.Copy(path + ".bak", path, true);
                 }
-
             }
 
             // Загружаем uasset файл с помощью UAssetAPI
-            UAsset asset = new UAsset(path, Version);
-            var json = asset.SerializeJson(Formatting.Indented);
+            Asset = new UAsset(path, Version);
+            var json = Asset.SerializeJson(Formatting.Indented);
             JObject jsonObject = JObject.Parse(json);
-            var ubergraphExpressions = KismetExtension.GetUbergraphJson(asset);
-            if (ubergraphExpressions == null)
-            {
-                Console.WriteLine("[ERR] Couldn't get the ubergraph JArray from the asset.");
-                return;
-            }
 
-            KismetProcessor.ReplaceAll(jsonObject, replacement, asset);
+            // Сначала обрабатываем Ubergraph
+            var ubergraph = KismetExtension.GetUbergraphJson(Asset);
+            if (ubergraph != null)
+            {
+                KismetProcessor.ReplaceAllInUbergraph(jsonObject, replacement, Asset);
+                Asset = UAsset.DeserializeJson(jsonObject.ToString());
+            }
+            // Теперь обрабатываем каждое свойство StrProperty
+            KismetProcessor.ReplaceAllInStrProperties(replacement, Asset);
+            if (allowTable)
+                KismetProcessor.ReplaceAllInStringTable(replacement, Asset);
+
 
             // --- Отладочный вывод и безопасный режим (без сохранения) ---
-
-            var ModdedAsset = UAsset.DeserializeJson(jsonObject.ToString());
             if (ProgramProcessor.DebugMode)
             {
                 var _json = jsonObject.ToString();
@@ -117,14 +81,17 @@ namespace Solicen.Kismet
                 File.WriteAllText($"{Environment.CurrentDirectory}\\Ubergraph.json", _json);
                 Console.WriteLine($"[INF] The modified JSON is saved in: {Environment.CurrentDirectory}\\Ubergraph.json");
             }
+
+            #region Сохранить .bak файлы
             if (!File.Exists(Path.ChangeExtension(path, ".bak")))
             {
                 if (File.Exists(path)) File.Copy(path, path + ".bak", true);
                 if (File.Exists(Path.ChangeExtension(path, "uexp"))) File.Copy(Path.ChangeExtension(path, "uexp"), Path.ChangeExtension(path, "uexp") + ".bak", true);
             }
+            #endregion
 
-            ModdedAsset.Write(path);
-            Console.WriteLine($"[INF] Total replacements: {KismetProcessor.ModifiedInstCount}");
+            Asset.Write(path);
+            Console.WriteLine($"\n[INF] Total replacements: {KismetProcessor.ModifiedCount}");
             Console.WriteLine($"[SUCCESS] The modified asset was successfully saved in: {path}");
             
         }

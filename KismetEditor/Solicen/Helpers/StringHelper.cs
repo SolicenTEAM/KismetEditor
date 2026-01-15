@@ -39,15 +39,9 @@ static internal class StringHelper
 
     public static bool IsGUID(this string str)
     {
-        if (str.Length >= 32)
-        {
-            foreach (char c in str)
-            {
-                if (((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')))
-                    return true;
-            }
-        }
-        return false;
+        if (string.IsNullOrEmpty(str)) return false;
+        // Guid.TryParse является самым надежным способом проверки.
+        // Он может обрабатывать различные форматы GUID, включая формат без дефисов (N).
+        return Guid.TryParseExact(str, "N", out _);
     }
-
 }
