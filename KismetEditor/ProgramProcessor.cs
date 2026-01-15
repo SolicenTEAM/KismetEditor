@@ -17,7 +17,6 @@ namespace Solicen.Kismet
         public static bool DebugMode = false;
         private static bool AllowTable = false, AllowTranslate, isExtract = true, packFiles = false;
         public static UAssetAPI.UnrealTypes.EngineVersion Version = UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_18;
-
         private static readonly string[] AllowedExtensionForAsset = new string[] { ".uasset", ".umap" };
         static List<Argument> arguments = new List<Argument>
         {
@@ -118,6 +117,16 @@ namespace Solicen.Kismet
 
         }
 
+        static void ProcessMappings()
+        {
+            var path = EnvironmentHelper.CurrentAssemblyDirectory + "\\Mappings.usmap";
+            if (System.IO.File.Exists(path))
+            {
+                BytecodeModifier.MappingsPath = path;
+                BytecodeExtractor.MappingsPath = path;
+            }
+        }
+
         static void ProcessVersion(string[] args)
         {
             var arg = args.FirstOrDefault(x => x.StartsWith("--version") || x.StartsWith("--v"));
@@ -132,6 +141,7 @@ namespace Solicen.Kismet
                 version = $"VER_{version}"; Enum.TryParse(version, out Version);
             }
             BytecodeModifier.Version = Version;
+            BytecodeExtractor.Version = Version;
         }
 
         private static bool _autoExit = false;
@@ -176,7 +186,7 @@ namespace Solicen.Kismet
         {
             var cmdArg = GetRunCommand(args);
             args = SplitArgs(args);
-            ProcessArgs(args); ProcessVersion(args);
+            ProcessArgs(args); ProcessVersion(args); ProcessMappings();
             if (args.Length > 0)
             {
                 var onlyArgs = args.Where(x => !x.StartsWith("--")).ToArray();
@@ -257,6 +267,7 @@ namespace Solicen.Kismet
                     }
                     else
                     {
+                        if (packFiles) return;
                         Console.WriteLine("[Extract mode]\n");
                         Console.WriteLine("------ [UberJSON] ------");
                         Kismet.BytecodeExtractor.AllowTableExtract = AllowTable;
@@ -265,7 +276,10 @@ namespace Solicen.Kismet
                 }
             }
 
-            System.IO.File.WriteAllText(EnvironmentHelper.CurrentAssemblyDirectory+"\\mod_filelist.txt", filelistBuilder.ToString());
+            if (filelistBuilder.Length>0)
+                System.IO.File.WriteAllText(EnvironmentHelper.CurrentAssemblyDirectory
+                    +"\\mod_filelist.txt", filelistBuilder.ToString());
+
             #region Запускаем автоматический перевод
             if (AllowTranslate) ProcessTranslator();
             #endregion

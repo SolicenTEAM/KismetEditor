@@ -11,10 +11,40 @@ namespace Solicen.Kismet
 {
     internal static class BytecodeExtractor
     {
+        public static string MappingsPath = string.Empty;
         public static bool AllowTableExtract = false;
         public static UAsset Asset;
         public static UAssetAPI.UnrealTypes.EngineVersion Version = UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_18;
 
+        public static UAsset LoadAsset(string asset)
+        {
+            if (MappingsPath != string.Empty)
+            {
+                try
+                {
+                    return Asset = new UAsset(asset, Version, new UAssetAPI.Unversioned.Usmap(MappingsPath));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("[ERR] Failed to load asset.");
+                    Console.WriteLine($" - {ex.Message}");
+                }
+
+            }
+            else
+            {
+                try
+                {
+                    return Asset = new UAsset(asset, Version);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("[ERR] Failed to load asset.");
+                    Console.WriteLine($" - {ex.Message}");
+                }
+            }
+            return null;
+        }
         public static void ExtractAllAndWriteUberJSON(string asset) => ExtractAllAndWriteUberJSON(new string[] { asset });
         public static void ExtractAllAndWriteUberJSON(string[] assets)
         {
@@ -25,7 +55,8 @@ namespace Solicen.Kismet
                 GC.Collect(2);
                 var FileName = Path.GetFileName(asset);
                 Console.WriteLine($"[INF] ...{FileName}");
-                Asset = new UAsset(asset, Version);
+                Asset = LoadAsset(asset);
+                if (Asset == null) return;
                 var strings = ExtractValues(asset);
                 if (strings.Length > 0)
                 {
@@ -41,7 +72,9 @@ namespace Solicen.Kismet
 
         public static void ExtractAndWriteCSV(string assetPath, string FileName = "")
         {
-            Asset = new UAsset(assetPath, Version); List<string> AllExtractedStr = new List<string>();
+            Asset = LoadAsset(assetPath); List<string> AllExtractedStr = new List<string>();
+            if (Asset == null) return;
+
             AllExtractedStr.AddRange(ExtractValues(assetPath));
             FileName = FileName == string.Empty ? Path.GetFileNameWithoutExtension(assetPath) : FileName;
             if (AllExtractedStr.Count == 0) return;

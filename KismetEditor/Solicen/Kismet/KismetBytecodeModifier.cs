@@ -12,6 +12,7 @@ namespace Solicen.Kismet
 {
     class BytecodeModifier
     {
+        public static string MappingsPath = string.Empty;
         public static bool AllowCreateBak = true;
         public static UAsset Asset; static bool UseBak = true;
         public static UAssetAPI.UnrealTypes.EngineVersion Version = UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_18;
