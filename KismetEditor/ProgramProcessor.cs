@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using UAssetAPI;
 using static System.Net.WebRequestMethods;
@@ -152,6 +153,11 @@ namespace Solicen.Kismet
             }
         }
 
+        private static StringBuilder filelistBuilder = new StringBuilder();
+        private static void AddToFileList(string path)
+        {
+            filelistBuilder.AppendLine($"\"{path}\"");
+        }
         private static bool IsAsset(string file)
         {
             if (AllowedExtensionForAsset.Any(x => file.Trim('\"').EndsWith(x))) return true;
@@ -190,7 +196,7 @@ namespace Solicen.Kismet
 
                     if (string.IsNullOrWhiteSpace(assetFile))
                     {
-                        Console.WriteLine("Drag & Drop UE file (.uasset|.umap) and press ENTER");
+                        Console.WriteLine("Drag & Drop UE file (.uasset|.umap) and press ENTER:");
                         assetFile = Console.ReadLine().Trim('\"');
                         if (!IsAsset(assetFile))
                         {
@@ -206,6 +212,7 @@ namespace Solicen.Kismet
                         {
                             var values = uber.GetValues();
                             Kismet.BytecodeModifier.ModifyAsset(assetFile, values, AllowTable);
+                            AddToFileList(assetFile);
                         }
                     }
                                   
@@ -224,9 +231,10 @@ namespace Solicen.Kismet
                             var uberJSONCollection = JSON.UberJSONProcessor.Deserialize(uberJson);
                             foreach (var uber in uberJSONCollection)
                             {
-                                var asset = files.FirstOrDefault(x => Path.GetFileName(x) == Path.GetFileName(uber.FileName));
+                                var assetFile = files.FirstOrDefault(x => Path.GetFileName(x) == Path.GetFileName(uber.FileName));
                                 var values = uber.GetValues();
-                                Kismet.BytecodeModifier.ModifyAsset(asset, values, AllowTable);
+                                Kismet.BytecodeModifier.ModifyAsset(assetFile, values, AllowTable);
+                                AddToFileList(assetFile);
                             }
                         }
                         else
@@ -241,6 +249,7 @@ namespace Solicen.Kismet
                                 {
                                     var values = uber.GetValues();
                                     Kismet.BytecodeModifier.ModifyAsset(assetFile, values, AllowTable);
+                                    AddToFileList(assetFile);
                                 }
                             }
                         }
@@ -255,6 +264,7 @@ namespace Solicen.Kismet
                 }
             }
 
+            System.IO.File.WriteAllText(EnvironmentHelper.CurrentAssemblyDirectory+"\\mod_filelist.txt", filelistBuilder.ToString());
             #region Запускаем автоматический перевод
             if (AllowTranslate) ProcessTranslator();
             #endregion
