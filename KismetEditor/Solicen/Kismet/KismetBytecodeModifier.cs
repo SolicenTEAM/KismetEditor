@@ -12,17 +12,21 @@ namespace Solicen.Kismet
 {
     class BytecodeModifier
     {
+        public static bool AllowCreateBak = true;
         public static UAsset Asset; static bool UseBak = true;
         public static UAssetAPI.UnrealTypes.EngineVersion Version = UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_18;
         public static void ModifyAsset(string path, Dictionary<string, string> replacement, bool allowTable = false)
         {
-            if (UseBak)
+            if (AllowCreateBak)
             {
-                var uexpPath = Path.ChangeExtension(path, ".uexp");
-                if (File.Exists(path+".bak"))
+                if (UseBak)
                 {
-                    File.Copy(uexpPath+".bak", uexpPath, true);
-                    File.Copy(path + ".bak", path, true);
+                    var uexpPath = Path.ChangeExtension(path, ".uexp");
+                    if (File.Exists(path + ".bak"))
+                    {
+                        File.Copy(uexpPath + ".bak", uexpPath, true);
+                        File.Copy(path + ".bak", path, true);
+                    }
                 }
             }
 
@@ -54,10 +58,13 @@ namespace Solicen.Kismet
             }
 
             #region Сохранить .bak файлы
-            if (!File.Exists(Path.ChangeExtension(path, ".bak")))
+            if (AllowCreateBak)
             {
-                if (File.Exists(path)) File.Copy(path, path + ".bak", true);
-                if (File.Exists(Path.ChangeExtension(path, "uexp"))) File.Copy(Path.ChangeExtension(path, "uexp"), Path.ChangeExtension(path, "uexp") + ".bak", true);
+                if (!File.Exists(Path.ChangeExtension(path, ".bak")))
+                {
+                    if (File.Exists(path)) File.Copy(path, path + ".bak", true);
+                    if (File.Exists(Path.ChangeExtension(path, "uexp"))) File.Copy(Path.ChangeExtension(path, "uexp"), Path.ChangeExtension(path, "uexp") + ".bak", true);
+                }
             }
             #endregion
 

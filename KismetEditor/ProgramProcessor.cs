@@ -21,6 +21,7 @@ namespace Solicen.Kismet
         private static readonly string[] AllowedExtensionForAsset = new string[] { ".uasset", ".umap" };
         static List<Argument> arguments = new List<Argument>
         {
+            new Argument("--nobak","[WARNING] this will disable .bak file creation", () => BytecodeModifier.AllowCreateBak = false),
             new Argument("--translate", "online translate all values", () => AllowTranslate = true),
             new Argument("--all", "allow extract all values", () => { MapParser.AllowLocalizedSource = true; AllowTable = true; }),
             new Argument("--table", "allow extract StringTable values (.locres)", () => AllowTable = true),
