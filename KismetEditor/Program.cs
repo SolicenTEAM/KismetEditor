@@ -15,7 +15,7 @@ namespace KismetEditor
     {
         static void Main(string[] args)
         {
-            var vers = $"{FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion}";
+            var vers = $"{FileVersionInfo.GetVersionInfo(AppContext.BaseDirectory+"\\KissE.exe").FileVersion}";
             Console.WriteLine($"KismetEditor {vers} - by Solicen (Denis Solicen)         |");
             Console.WriteLine("[URL] https://github.com/SolicenTEAM/KismetEditor         |");
             Console.WriteLine("[INF] Toss a coin: https://boosty.to/denissolicen/donate  |");

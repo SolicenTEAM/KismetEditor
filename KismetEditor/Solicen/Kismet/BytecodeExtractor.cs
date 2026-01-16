@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using UAssetAPI;
 using UAssetAPI.FieldTypes;
+using UAssetAPI.Unversioned;
 
 namespace Solicen.Kismet
 {
@@ -22,7 +23,7 @@ namespace Solicen.Kismet
             {
                 try
                 {
-                    return Asset = new UAsset(asset, Version, new UAssetAPI.Unversioned.Usmap(MappingsPath));
+                    return Asset = new UAsset(asset, Version, new Usmap(MappingsPath));
                 }
                 catch (Exception ex)
                 {
@@ -48,7 +49,7 @@ namespace Solicen.Kismet
         public static void ExtractAllAndWriteUberJSON(string asset) => ExtractAllAndWriteUberJSON(new string[] { asset });
         public static void ExtractAllAndWriteUberJSON(string[] assets)
         {
-            var JsonFilePath = $"{EnvironmentHelper.CurrentAssemblyDirectory}\\UberJSON.json";
+            var JsonFilePath = $"{EnvironmentHelper.AssemblyDirectory}\\UberJSON.json";
             var uberJSONCollection = new List<Solicen.JSON.UberJSON>();
             foreach (var asset in assets)
             {
@@ -80,7 +81,7 @@ namespace Solicen.Kismet
             if (AllExtractedStr.Count == 0) return;
 
             #region Запись CSV
-            var csvFilePath = FileName.EndsWith(".csv") ? FileName : $"{EnvironmentHelper.CurrentAssemblyDirectory}\\{FileName}.csv";
+            var csvFilePath = FileName.EndsWith(".csv") ? FileName : $"{EnvironmentHelper.AssemblyDirectory}\\{FileName}.csv";
             if (File.Exists(csvFilePath))
             {
                 // Если CSV уже существует, просто добавить новые строки

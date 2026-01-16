@@ -69,7 +69,7 @@ namespace Solicen.Kismet
 
         static void ProcessTranslator()
         {
-            var JsonFilePath = EnvironmentHelper.CurrentAssemblyDirectory + "\\UberJSON.json";
+            var JsonFilePath = EnvironmentHelper.AssemblyDirectory + "\\UberJSON.json";
             if (System.IO.File.Exists(JsonFilePath))
             {
                 var uber = UberJSONProcessor.ReadFile(JsonFilePath);
@@ -119,7 +119,9 @@ namespace Solicen.Kismet
 
         static void ProcessMappings()
         {
-            var path = EnvironmentHelper.CurrentAssemblyDirectory + "\\Mappings.usmap";
+            var anyMappings = Directory.GetFiles(EnvironmentHelper.AssemblyDirectory, "*.usmap");
+
+            var path = anyMappings.FirstOrDefault();
             if (System.IO.File.Exists(path))
             {
                 BytecodeModifier.MappingsPath = path;
@@ -144,7 +146,6 @@ namespace Solicen.Kismet
             BytecodeExtractor.Version = Version;
         }
 
-        private static bool _autoExit = false;
         static void ProcessArgs(string[] args)
         {
             foreach (var arg in args)
@@ -178,7 +179,7 @@ namespace Solicen.Kismet
         {
             var csvFile = string.IsNullOrWhiteSpace(file) ? "" : Path.GetFileNameWithoutExtension(file)+".csv";
             var directoryName = string.IsNullOrWhiteSpace(file) ? "" : $"\\{Path.GetFileName(Path.GetDirectoryName(file))}\\";
-            var unpackDirectory = EnvironmentHelper.CurrentAssemblyDirectory + "\\Unpack\\" + directoryName;
+            var unpackDirectory = EnvironmentHelper.AssemblyDirectory + "\\Unpack\\" + directoryName;
             Directory.CreateDirectory(unpackDirectory);
             return unpackDirectory + csvFile;
         }
@@ -277,7 +278,7 @@ namespace Solicen.Kismet
             }
 
             if (filelistBuilder.Length>0)
-                System.IO.File.WriteAllText(EnvironmentHelper.CurrentAssemblyDirectory
+                System.IO.File.WriteAllText(EnvironmentHelper.AssemblyDirectory
                     +"\\mod_filelist.txt", filelistBuilder.ToString());
 
             #region Запускаем автоматический перевод
