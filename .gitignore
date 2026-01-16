@@ -4,3 +4,5 @@ obj
 packages
 *.csproj.user
 *Fody*
+*launchSettings.json
+*MigrationBackup
