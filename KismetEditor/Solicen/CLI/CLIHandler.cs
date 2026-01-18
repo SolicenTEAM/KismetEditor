@@ -52,8 +52,8 @@ namespace Solicen.CLI
                 new Argument("--table:only:key", "-t:o:k", "If key/name matches then include only this value to output.", (key) => MapParser.SearchNameSpace = key),
                 new Argument("--pack:folder", "-p:f", "Translate and pack assets into auto prepared folder.", (folder) => { BytecodeModifier.PackIntoFolder = true; BytecodeModifier.PackFolder = folder; }),
                 new Argument("--version", "-v", "Set the engine version for correct processing (e.g., -v=5.1).", ProcessVersion),
-                new Argument("--lang:from", null, "Set the source language for translation (e.g., --lang:from=en).", (lang) => TranslateManager.LanguageFrom = lang),
-                new Argument("--lang:to", null, "Set the target language for translation (e.g., --lang:to=ru).", (lang) => TranslateManager.LanguageTo = lang),
+                new Argument("--lang:from", "-l:f", "Set the source language for translation (e.g., --lang:from=en).", (lang) => TranslateManager.LanguageFrom = lang),
+                new Argument("--lang:to", "-l:t", "Set the target language for translation (e.g., --lang:to=ru).", (lang) => TranslateManager.LanguageTo = lang),
                 new Argument("--endpoint", "-e", "Set the translation service endpoint (e.g., -e=Yandex).", (endpoint) => TranslateManager.Endpoint = endpoint),
                 new Argument("--run", "-r", "Execute a command in the terminal after completion.", (cmd) => Config.RunCommand = cmd)
             };
