@@ -3,6 +3,7 @@ using Solicen.Kismet;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -11,7 +12,7 @@ using UAssetAPI.Kismet;
 using UAssetAPI.Kismet.Bytecode;
 using UAssetAPI.PropertyTypes.Structs;
 
-namespace KismetEditor.Solicen
+namespace Solicen
 {
     /// <summary>
     /// Новый процессор байт-кода, основанный на улучшенной версии оригинальной логики замены.
@@ -28,56 +29,58 @@ namespace KismetEditor.Solicen
         public static void ReplaceAllInStrProperties(Dictionary<string, string> replacement, UAsset _asset)
         {
             asset = _asset;
-            Console.WriteLine("\n[INF] Starting a new replacement process...");
+            //Console.WriteLine("\n[INF] Starting a new replacement process...");
             foreach (var entry in replacement)
             {
                 string replaceFrom = entry.Key; string replaceTo = entry.Value;
-                Console.WriteLine($"\n--- String processing: '{replaceFrom.Escape()}' ---");
+                //Console.WriteLine($"\n--- String processing: '{replaceFrom.Escape()}' ---");
                 var replaced = MapParser.ReplaceStrProperty(asset, replaceFrom, replaceTo);
                 if (replaced != 0) 
                 {
-                    Console.WriteLine($"[INF] Occurrence of '{replaceFrom.Escape()}' has been replaced. Search for the next one...");
+                    //Console.WriteLine($"[INF] Occurrence of '{replaceFrom.Escape()}' has been replaced. Search for the next one...");
                     ModifiedCount += replaced;
                 } 
-                Console.WriteLine($"--- Line processing completed: '{replaceFrom.Escape()}' ---");
+                //Console.WriteLine($"--- Line processing completed: '{replaceFrom.Escape()}' ---");
             }
         }
 
         public static void ReplaceAllInStringTable(Dictionary<string, string> replacement, UAsset _asset)
         {
             asset = _asset;
-            Console.WriteLine("\n[INF] Starting a new replacement process...");
+            //Console.WriteLine("\n[INF] Starting a new replacement process...");
             foreach (var entry in replacement)
             {
                 string replaceFrom = entry.Key; string replaceTo = entry.Value;
-                Console.WriteLine($"\n--- String processing: '{replaceFrom.Escape()}' ---");
+                //Console.WriteLine($"\n--- String processing: '{replaceFrom.Escape()}' ---");
                 var replaced = MapParser.ReplaceStringTableEntry(asset, entry.Key, entry.Value);
                 if (replaced != 0)
                 {
-                    Console.WriteLine($"[INF] Occurrence of '{replaceFrom.Escape()}' has been replaced. Search for the next one...");
+                    //Console.WriteLine($"[INF] Occurrence of '{replaceFrom.Escape()}' has been replaced. Search for the next one...");
                     ModifiedCount += replaced;
                 }
-                Console.WriteLine($"--- Line processing completed: '{replaceFrom.Escape()}' ---");
+                //Console.WriteLine($"--- Line processing completed: '{replaceFrom.Escape()}' ---");
             }
         }
 
         public static void ReplaceAllInUbergraph(JObject assetJsonObject, Dictionary<string, string> replacement, UAsset _asset)
         {
             asset = _asset;
-            Console.WriteLine("\n[INF] Starting a new replacement process...");
+            //Console.WriteLine("\n[INF] Starting a new replacement process...");
             foreach (var entry in replacement)
             {
                 string replaceFrom = entry.Key; string replaceTo = entry.Value;
-                Console.WriteLine($"\n--- String processing: '{replaceFrom.Escape()}' ---");
+                //Solicen.CLI.Console.StartProgress($"[INF] Replace process for: {replaceFrom.Escape()}");
+                //Console.WriteLine($"\n--- String processing: '{replaceFrom.Escape()}' ---");
 
                 // Заменяем все вхождения этой строки, пока они находятся
                 while (ReplaceSingle(assetJsonObject, replaceFrom, replaceTo))
                 {
-                    Console.WriteLine($"[INF] Occurrence of '{replaceFrom.Escape()}' has been replaced. Search for the next one...");
+                    //Console.WriteLine($"[INF] Occurrence of '{replaceFrom.Escape()}' has been replaced. Search for the next one...");
                 }
-                Console.WriteLine($"--- Line processing completed: '{replaceFrom.Escape()}' ---");
+                //Solicen.CLI.Console.StopProgress($"[INF] Replace processing completed: {replaceFrom.Escape()}");
+                //Console.WriteLine($"--- Line processing completed: '{replaceFrom.Escape()}' ---");
             }
-            Console.WriteLine("\n[INF] Replacement process is fully completed.");
+            //Console.WriteLine("\n[INF] Replacement process is fully completed.");
         }
 
         private static bool ReplaceSingle(JObject assetJsonObject, string replaceFrom, string replaceTo)
@@ -98,7 +101,7 @@ namespace KismetEditor.Solicen
             if (replaced)
             {
                 // Шаги 6-8: Если замена произошла, пересчитываем смещения
-                Console.WriteLine("[INF] Recalculation and patching of offsets...");
+                //Console.WriteLine("[INF] Recalculation and patching of offsets...");
                 // Для пересчета нам снова нужен сериализованный ассет
                 asset = UAsset.DeserializeJson(assetJsonObject.ToString());
                 var newUbergraph = KismetExtension.GetUbergraphJson(asset);
@@ -115,7 +118,7 @@ namespace KismetEditor.Solicen
                 }
                 else
                 {
-                    Console.WriteLine($"[INF] New offsets have been calculated (ToEnd -> {newToEnd}, FromEnd -> {newFromEnd})");
+                    //Console.WriteLine($"[INF] New offsets have been calculated (ToEnd -> {newToEnd}, FromEnd -> {newFromEnd})");
                 }
 
                 // Заменяем магические числа на реальные смещения в "живом" JObject
@@ -162,11 +165,11 @@ namespace KismetEditor.Solicen
                     JToken valueToken = obj["Value"] ?? obj["RawValue"];
                     if (valueToken?.ToString() == replaceFrom)
                     {
-                        Console.WriteLine($"[INF] A candidate with the string '{replaceFrom.Escape()}' was found. Apply filters...");
+                        //Console.WriteLine($"[INF] A candidate with the string '{replaceFrom.Escape()}' was found. Apply filters...");
                         // Применяем фильтры
                         if (token.Ancestors().Any(ancestor => ancestor is JProperty prop && prop.Name == "AssignmentExpression"))
                         {
-                            Console.WriteLine("[INF] Filtered: located in the 'AssignmentExpression'.");
+                            //Console.WriteLine("[INF] Filtered: located in the 'AssignmentExpression'.");
                             return false; // Продолжаем поиск
                         }
 
@@ -182,17 +185,18 @@ namespace KismetEditor.Solicen
                             Console.WriteLine("[ERR] The parent Statement could not be found.");
                             return false; // Критическая ошибка, но может, в другом месте найдется
                         }
-                        Console.WriteLine($"[INF] The parent Statement was found for modification.");
+                        //Console.WriteLine($"[INF] The parent Statement was found for modification.");
 
                         // Шаг 4: Запоминаем, удаляем и вставляем заполнитель
                         int originalIndex = scriptBytecodeArray.IndexOf(statement);
                         if (originalIndex == -1) return false; // Не смогли найти индекс, что-то пошло не так
 
-                        scriptBytecodeArray.RemoveAt(originalIndex);
-
+                        scriptBytecodeArray.RemoveAt(originalIndex);       
+                        var size = InstructionSearchSize.GetSize(asset, statement, ubergraph);
+                        /*
                         Console.WriteLine($"[INF] Step 1: Calculate the size of all instructions.");
-                        var size = InstructionSizeCalculator.GetSize(asset, statement, ubergraph);
                         Console.WriteLine($"[INF] Step 2: Calculate the placeholder size.");
+                        */
                         var placeholder = KismetExtension.PlaceholderBySize(size);
 
 
@@ -200,8 +204,10 @@ namespace KismetEditor.Solicen
                         {
                             scriptBytecodeArray.Insert(originalIndex, inst);
                         }
+                        /*
                         Console.WriteLine($"[INF] Step 3: The placeholder size calculation is completed: {placeholder.Length}.");
                         Console.WriteLine("[INF] Step 4: The old instruction deleted, the placeholder and the jump (TES) are inserted.");
+                        */
 
                         // Шаг 5: Вставляем измененную инструкцию и прыжок-возврат в конец
                         var stringConstToModify = statement.SelectTokens("$..*").OfType<JObject>().FirstOrDefault(o => (o["Value"] ?? o["RawValue"])?.ToString() == replaceFrom);
@@ -217,7 +223,7 @@ namespace KismetEditor.Solicen
 
                         scriptBytecodeArray.Add(statement);
                         scriptBytecodeArray.Add(returnJump);
-                        Console.WriteLine("[INF] Step 5: The modified instruction and the jump (FES) added to the end.");
+                        //Console.WriteLine("[INF] Step 5: The modified instruction and the jump (FES) added to the end.");
                         ModifiedCount++;
 
                         return true; // Замена произведена, выходим из рекурсии
@@ -254,7 +260,7 @@ namespace KismetEditor.Solicen
             if (jumpToReplace != null)
             {
                 jumpToReplace["CodeOffset"] = newOffset;
-                Console.WriteLine($"[INF] Patch: The magic number {magicToFind} has been replaced with the offset {newOffset}.");
+                //Console.WriteLine($"[INF] Patch: The magic number {magicToFind} has been replaced with the offset {newOffset}.");
             } else
             {
                 Console.WriteLine($"[ERR] Couldn't find instructions with the magic number {magicToFind} to replace.");

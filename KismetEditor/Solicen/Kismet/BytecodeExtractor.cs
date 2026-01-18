@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Solicen.CLI;
 using Solicen.JSON;
 using System;
 using System.Collections.Generic;
@@ -12,68 +13,41 @@ namespace Solicen.Kismet
 {
     internal static class BytecodeExtractor
     {
-        public static string MappingsPath = string.Empty;
         public static bool AllowTableExtract = false;
         public static UAsset Asset;
-        public static UAssetAPI.UnrealTypes.EngineVersion Version = UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_18;
 
-        public static UAsset LoadAsset(string asset)
+        public static void ExtractAllAndWriteUberJSON(string asset, bool allowUnderscore = false, bool allowLocalized = false) => ExtractAllAndWriteUberJSON(new string[] { asset });
+        public static void ExtractAllAndWriteUberJSON(string[] assets, bool allowUnderscore = false, bool allowLocalized = false)
         {
-            if (MappingsPath != string.Empty)
-            {
-                try
-                {
-                    return Asset = new UAsset(asset, Version, new Usmap(MappingsPath));
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("[ERR] Failed to load asset.");
-                    Console.WriteLine($" - {ex.Message}");
-                }
-
-            }
-            else
-            {
-                try
-                {
-                    return Asset = new UAsset(asset, Version);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("[ERR] Failed to load asset.");
-                    Console.WriteLine($" - {ex.Message}");
-                }
-            }
-            return null;
-        }
-        public static void ExtractAllAndWriteUberJSON(string asset) => ExtractAllAndWriteUberJSON(new string[] { asset });
-        public static void ExtractAllAndWriteUberJSON(string[] assets)
-        {
+            MapParser.AllowLocalizedSource = allowLocalized;
+            MapParser.AllowUnderscore = allowUnderscore;
             var JsonFilePath = $"{EnvironmentHelper.AssemblyDirectory}\\UberJSON.json";
             var uberJSONCollection = new List<Solicen.JSON.UberJSON>();
             foreach (var asset in assets)
             {
-                GC.Collect(2);
                 var FileName = Path.GetFileName(asset);
-                Console.WriteLine($"[INF] ...{FileName}");
-                Asset = LoadAsset(asset);
-                if (Asset == null) return;
-                var strings = ExtractValues(asset);
-                if (strings.Length > 0)
+                CLI.Console.WriteLine($"[DarkGray][INF] [White]...{FileName}");
+                Asset = AssetLoader.LoadAsset(asset);
+                if (Asset == null || KismetExtension.GetExportCount(Asset) == 0)
+                {
+                    Asset = null; return;
+                }
+                var values = ExtractValues(asset);
+                if (values.Length > 0)
                 {
                     var uberJSON = new UberJSON(FileName);
-                    uberJSON.AddRange(strings.ToArray());
+                    uberJSON.AddRange(values.ToArray());
                     uberJSONCollection.Add(uberJSON);
                 }
             }
             var json = JsonConvert.SerializeObject(uberJSONCollection, Formatting.Indented);
             File.WriteAllText(JsonFilePath, json.ToString());
-            Console.WriteLine($"[SUCCESS] File with extracted strings was successfully saved in: {JsonFilePath}\n");
+            CLI.Console.WriteLine($"[Green][SUCCESS] [White]File with extracted strings was successfully saved in:\n[DarkGray]{JsonFilePath}\n");
         }
 
         public static void ExtractAndWriteCSV(string assetPath, string FileName = "")
         {
-            Asset = LoadAsset(assetPath); List<string> AllExtractedStr = new List<string>();
+            Asset = AssetLoader.LoadAsset(assetPath); List<string> AllExtractedStr = new List<string>();
             if (Asset == null) return;
 
             AllExtractedStr.AddRange(ExtractValues(assetPath));
@@ -94,7 +68,7 @@ namespace Solicen.Kismet
                 // Иначе просто записать строки в файл
                 File.WriteAllText(csvFilePath, string.Join("\n", AllExtractedStr));
             }
-            Console.WriteLine($"[SUCCESS] File with extracted strings was successfully saved in: {csvFilePath}\n");
+            CLI.Console.WriteLine($"[Green][SUCCESS] [White] File with extracted strings was successfully saved in:\n[DarkGray]{csvFilePath}\n");
             #endregion
         }
 
@@ -103,21 +77,33 @@ namespace Solicen.Kismet
             var strProperty = MapParser.ExtractStrProperties(Asset);
             if (strProperty != null && strProperty.Length > 0)
             {
-                Console.WriteLine("------ [StrProperty] ------");
-                return MapParser.ParseAsCSV(strProperty);
+
+                CLI.Console.Write("  [DarkYellow][StrProperty] ");
+                CLI.Console.Separator(36, true, ConsoleColor.DarkYellow);
+                var values =  MapParser.ParseAsCSV(strProperty);
+                return values;
             }
             return new string[] { };
         }
 
-        public static string[] ExtractEachTableValue()
+        public static string[] ExtractEachAnyTableValue()
         {
             if (AllowTableExtract)
             {
-                var table = MapParser.ExtractStringTableEntries(Asset);
-                if (table != null && table.Length > 0)
+                MapParser.IncludeNameSpace = true;
+                var allTable = new List<LObject>();
+                var stringTable = MapParser.ExtractStringTableEntries(Asset);
+                var dataTable = MapParser.ExtractDataTableEntries(Asset);
+
+                allTable.AddRange(stringTable);
+                allTable.AddRange(dataTable);
+
+                if (allTable.Count > 0)
                 {
-                    Console.WriteLine("------ [StringTable] ------");
-                    return MapParser.ParseAsCSV(table);
+                    CLI.Console.Write("  [DarkYellow][Table] ");
+                    CLI.Console.Separator(36, true, ConsoleColor.DarkYellow);
+                    var values = MapParser.ParseAsCSV(allTable.ToArray());
+                    return values;
                 }
             }
             return new string[] { };
@@ -128,7 +114,7 @@ namespace Solicen.Kismet
             var ubergraph = KismetExtension.GetUbergraphSerialized(Asset);
             if (ubergraph != null && ubergraph.Count > 0)
             {
-                if (ProgramProcessor.DebugMode)
+                if (CLIHandler.Config.DebugMode)
                 {
                     var _dummyJson = KismetExtension.GetUbergraphJson(Asset);
                     var serializer = new KismetExpressionSerializer(Asset);
@@ -142,7 +128,7 @@ namespace Solicen.Kismet
             }
             else
             {
-                return null;
+                return Array.Empty<string>();
             }
 
         }
@@ -153,12 +139,13 @@ namespace Solicen.Kismet
             #region Получение строк любого вида
             var propStr = ExtractEachStrProperty(); // Получаем строки из каждого StrProperty
             var ubergraphStr = ExtractFromUbergraph(assetPath); // Получаем строки из ExecuteUbergraph
-            var tableValues = ExtractEachTableValue();
+            var tableValues = ExtractEachAnyTableValue();
             #endregion
 
             if (ubergraphStr != null) AllExtractedStr.AddRange(ubergraphStr);
             if (propStr != null) AllExtractedStr.AddRange(propStr);
             if (tableValues != null) AllExtractedStr.AddRange(tableValues);
+            if (AllExtractedStr.Count > 0) System.Console.WriteLine();
             return AllExtractedStr.ToArray();
         }
     }

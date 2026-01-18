@@ -1,4 +1,4 @@
-﻿﻿using Newtonsoft.Json.Linq;
+﻿﻿﻿﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,12 +20,12 @@ namespace Solicen.Kismet
     {
         // Нам нужен доступ к ассету для работы сериализатора
         private static UAsset uAsset;
-
+        public static string SearchNameSpace = "";
         public static bool AllowLocalizedSource = false;
-        private static bool IsLocalizedSource(string name) => AllowLocalizedSource ? false : name == "LocalizedSource";
-
         public static bool AllowUnderscore = false;
-        private static bool IsContainsUnderscore(string str) => AllowUnderscore ? false : str.Contains("_"); 
+        public static bool IncludeNameSpace = false;
+        internal static bool IsLocalizedSource(string name) => AllowLocalizedSource ? false : name == "LocalizedSource";
+        internal static bool IsContainsUnderscore(string str) => AllowUnderscore ? false : str.Contains("_");
 
         /// <summary>
         /// Создает карту инструкций из JArray уберграфа.
@@ -50,8 +50,17 @@ namespace Solicen.Kismet
             HashSet<string> csvLines = new HashSet<string>();
             foreach (var value in objects)
             {
-                Console.WriteLine($" - {value.Value.Escape()}");
-                csvLines.Add($"{value.Value.Escape()}");
+                string displayValue = value.Value.Escape();
+                string finalValue = displayValue;
+
+                // Если включена опция и у строки есть ключ (сохранен в Instruction), добавляем его
+                if (IncludeNameSpace && !string.IsNullOrEmpty(value.Instruction))
+                {
+                    finalValue = $"{value.Instruction}::{displayValue}";
+                }
+
+                CLI.Console.WriteLine($"  [DarkYellow]| [White]- {displayValue}");
+                csvLines.Add(finalValue);
             }
             return csvLines.ToArray();
         }
@@ -62,13 +71,15 @@ namespace Solicen.Kismet
             HashSet<string> csvLines = new HashSet<string>();
             if (kismetValues.Count > 0)
             {
-                Console.WriteLine("------- [Ubergraph] -------");
+                CLI.Console.Write("  [DarkYellow][Ubergraph] ");
+                CLI.Console.Separator(36, true, ConsoleColor.DarkYellow);
                 foreach (var value in kismetValues)
                 {
-                    Console.WriteLine($" - {value.Escape()}");
+                    CLI.Console.WriteLine($"  [DarkYellow]| [White]- {value.Escape()}");
                     csvLines.Add($"{value.Escape()}");
                 }
             }
+
             return csvLines.ToArray();
         }
 
@@ -78,9 +89,9 @@ namespace Solicen.Kismet
         /// <param name="asset">Ассет для сканирования.</param>
         /// <returns>Массив LObject с найденными строками.</returns>
         public static LObject[] ExtractStrProperties(UAsset asset)
-        {
-            var results = new List<LObject>();
-            if (asset == null) return results.ToArray();
+        {            
+            var results = new Dictionary<string,LObject>();
+            if (asset == null) return Array.Empty<LObject>();
 
             for (int i = 0; i < asset.Exports.Count; i++)
             {
@@ -91,13 +102,15 @@ namespace Solicen.Kismet
                         if (prop is StrPropertyData strProp && strProp.Value != null)
                         {
                             string value = strProp.Value.Value;
-                            if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2 || value.Contains("_") || value == "None" || int.TryParse(value, out _) || value.IsGUID()) continue;
-                            results.Add(new LObject(i, value, "StrProperty", 0, 0));
+                            if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2 
+                                || IsContainsUnderscore(value) || value == "None" || int.TryParse(value, out _) 
+                                || value.IsGUID() || value.IsAllNumber() || value.IsUpperLower()) continue;
+                            results.TryAdd(value, new LObject(i, value, "StrProperty", 0, 0));
                         }
                     }
                 }
             }
-            return results.ToArray();
+            return results.Select(x => x.Value).ToArray();
         }
 
         /// <summary>
@@ -108,7 +121,7 @@ namespace Solicen.Kismet
         public static LObject[] ExtractStringTableEntries(UAsset asset)
         {
             var results = new List<LObject>();
-            if (asset == null) return results.ToArray();
+            if (asset == null) return Array.Empty<LObject>();
 
             for (int i = 0; i < asset.Exports.Count; i++)
             {
@@ -118,7 +131,9 @@ namespace Solicen.Kismet
                     {
                         // entry.Key - это ключ локализации, entry.Value - это исходный текст.
                         string value = entry.Value.Value;
-                        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2 || value.Contains("_") || value == "None" || int.TryParse(value, out _) || value.IsGUID()) continue;
+                        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2 
+                            || IsContainsUnderscore(value) || value == "None" || int.TryParse(value, out _) 
+                            || value.IsGUID() || value.IsAllNumber() || value.IsUpperLower()) continue;
                         
                         // В LObject мы сохраняем исходный текст как Value, а ключ локализации как Instruction, чтобы использовать его при замене.
                         results.Add(new LObject(i, value, entry.Key.Value, 0, 0));
@@ -128,6 +143,53 @@ namespace Solicen.Kismet
             return results.ToArray();
         }
 
+        /// <summary>
+        /// Извлекает все строки из DataTable в ассете.
+        /// </summary>
+        /// <param name="asset">Ассет для сканирования.</param>
+        /// <returns>Массив LObject с найденными строками.</returns>
+        public static LObject[] ExtractDataTableEntries(UAsset asset)
+        {
+            var results = new Dictionary<string, LObject>();
+            if (asset == null) return Array.Empty<LObject>();
+
+            for (int i = 0; i < asset.Exports.Count; i++)
+            {
+                if (asset.Exports[i] is UAssetAPI.ExportTypes.DataTableExport dataTableExport)
+                {
+                    foreach (var row in dataTableExport.Table.Data)
+                    {
+                        // Имя строки (RowName) является ключом
+                        var rowName = row.Name.ToString();
+                       
+                        // Ищем текстовые свойства внутри строки
+                        foreach (var prop in row.Value)
+                        {
+                            if (prop.RawValue != null)
+                            {
+                                string dValue = prop.RawValue.ToString().Escape();
+                                string finalValue = dValue;
+                                var key = string.Empty;
+                                if (!string.IsNullOrEmpty(prop.Name.Value.Value))
+                                {
+                                    key = prop.Name.Value.Value;
+                                    bool isAllowedNamespace = SearchNameSpace != "" && SearchNameSpace == key ? true : 
+                                        SearchNameSpace == "" ? true : false;
+                                    if (!isAllowedNamespace) continue;
+                                }
+                                if (string.IsNullOrWhiteSpace(dValue) || dValue.Trim().Length < 2 
+                                    || IsContainsUnderscore(dValue) || dValue == "None" || bool.TryParse(dValue, out _) 
+                                    || int.TryParse(dValue, out _) || dValue.IsGUID() || dValue.IsAllNumber() || dValue.IsUpperLower()) continue;
+
+                                // Сохраняем имя строки (ключ) в поле Instruction
+                                results.TryAdd(finalValue, new LObject(i, finalValue, key, 0, 0));
+                            }
+                        }
+                    }
+                }
+            }
+            return results.Values.ToArray();
+        }
         /// <summary>
         /// Заменяет запись в StringTable по ключу.
         /// </summary>
@@ -297,18 +359,17 @@ namespace Solicen.Kismet
                         // Проверяем, не является ли эта строка частью данных для локализации (.locres)
                         if (token.Parent is JProperty parentProperty)
                         {
-                            bool isLocalized = IsLocalizedSource(parentProperty.Name);
                             if (IsLocalizedSource(parentProperty.Name))
                             {
-                                if (!AllowLocalizedSource) return; // Пропускаем эту строку
-                                else valueName = parentProperty.Name;
+                                valueName = parentProperty.Name;
                             }
                             if (parentProperty.Name == "LocalizedKey" || parentProperty.Name == "LocalizedNamespace")
                                     return;
                         }
                         string value = valueToken.ToString();
                         if (token.Ancestors().Any(a => a is JProperty p && p.Name == "AssignmentExpression")) return;
-                        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2 || value.Contains("_") || value == "None" || int.TryParse(value, out _) || value.IsGUID()) return;
+                        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2 || IsContainsUnderscore(value) 
+                            || value == "None" || int.TryParse(value, out _) || value.IsGUID() || value.IsPath() || value.IsAllNumber() || value.IsUpperLower()) return;
                         kismets.Add(new LObject(statementIndex, value, valueName, offset, 0)); 
                     }
                 }

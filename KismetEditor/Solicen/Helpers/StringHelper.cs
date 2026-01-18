@@ -1,5 +1,7 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 static internal class StringHelper
 {
@@ -36,12 +38,59 @@ static internal class StringHelper
             .Replace("\\t", "\t")
             .Replace("\"\"", "\"");
     }
+    public static string UE_FolderWithFileName(this string unrealFile)
+    {
+        var match = new Regex(@"\\([^\\]+)\\Content(?!.*Paks)\\.+").Match(unrealFile).Value.TrimEnd('\"');
+        return string.IsNullOrWhiteSpace(match) ? unrealFile : match;
+    }
+    public static string UE_FolderWithoutFileName(this string unrealFile)
+    {
+        var match = new Regex(@"\\([^\\]+)\\Content(?!.*Paks)\\.+").Match(unrealFile).Value.TrimEnd('\"');
+        return string.IsNullOrWhiteSpace(match) ? unrealFile : match.Replace(Path.GetFileName(unrealFile), "");
+    }
+
+    public static bool IsAllNumber(this string str)
+    {
+        return str.All(x => char.IsNumber(x) == true);
+    }
+    public static bool IsLower(this string str)
+    {
+        var letters = str.Where(c => char.IsLetter(c));
+        return letters.All(c => char.IsLower(c) == true);
+    }
+    public static bool IsPath(this string str)
+    {
+        return false; // WIP Нужно придумать как определять остатки путей
+                      // без остальных частей которые могут относитья к тексту
+    }
+    public static bool IsUpper(this string str)
+    {
+        var letters = str.Where(c => char.IsLetter(c));
+        return letters.All(c => char.IsUpper(c) == true);
+    }
+    public static bool IsAllDot(this string str)
+    {
+        return str.All(c => c == '.' == true);
+    }
+
+    public static bool IsUpperLower(this string str)
+    {
+        var space = str.Where(c => char.IsWhiteSpace(c)).Count();
+        if (space > 0) return false;
+        else
+        {
+            var upperChars = str.Where(c => char.IsUpper(c)).Count();
+            var lowerChars = str.Where(c => char.IsLower(c)).Count();
+            if (upperChars >= 2 && lowerChars > upperChars)
+                return true;
+        }
+        return false;
+    }
 
     public static bool IsGUID(this string str)
     {
         if (string.IsNullOrEmpty(str)) return false;
-        // Guid.TryParse является самым надежным способом проверки.
-        // Он может обрабатывать различные форматы GUID, включая формат без дефисов (N).
+        // Формат без дефисов (N).
         return Guid.TryParseExact(str, "N", out _);
     }
 }

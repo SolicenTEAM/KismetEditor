@@ -21,13 +21,12 @@ namespace Solicen.Translator
 
         public static string LanguageTo = "ru";
         public static string LanguageFrom = "en";
-        public static string Endpoint = "Yandex";
+        public static string Endpoint = "yandex";
 
-        public void TranslateLines(ref Dictionary<string, string> values, IProgress<Tuple<int, int>> progress = null, bool showWaringMsg = false, int delayBetweenMsg = 250)
+        public void TranslateLines(ref Dictionary<string, string> values, IProgress<Tuple<int, int>> progress = null, bool showWaringMsg = false, int delayBetweenMsg = 150)
         {
             int SegmentIndex = 1; Dictionary<string, string> result = new Dictionary<string, string>();
             int nullSegments = values.Where(s => string.IsNullOrWhiteSpace(s.Value)).ToArray().Length;
-            Console.WriteLine($"[Translator] : Prepare to change : [{nullSegments}]");
             foreach (var entry in values)
             {   
                 if (string.IsNullOrEmpty(entry.Value))
@@ -60,7 +59,7 @@ namespace Solicen.Translator
             var from = LanguageFrom.ToLower() != "auto" ? LanguageFrom : string.Empty;
             switch (Endpoint)
             {
-                case "Google":
+                case "google":
                     if (from == string.Empty)
                     {
                         var gResult = await GoogleV2.TranslateAsync(SourceText, LanguageTo);
@@ -71,7 +70,7 @@ namespace Solicen.Translator
                         var gResult = await GoogleV2.TranslateAsync(SourceText, LanguageTo, from);
                         return gResult.Translation;
                     }
-                case "Yandex":
+                case "yandex":
                     if (from == string.Empty)
                     {
                         var yResult = await Yandex.TranslateAsync(SourceText, LanguageTo);
@@ -82,7 +81,7 @@ namespace Solicen.Translator
                         var yResult = await Yandex.TranslateAsync(SourceText, LanguageTo, from);
                         return yResult.Translation;
                     }
-                case "Microsoft":
+                case "microsoft":
                     if (from == string.Empty)
                     {
                         var mResult = await Microsoft.TranslateAsync(SourceText, LanguageTo);
@@ -94,7 +93,7 @@ namespace Solicen.Translator
                         return mResult.Translation;
                     }
 
-                case "Bing":
+                case "bing":
                     if (from == string.Empty)
                     {
                         var bResult = await Microsoft.TranslateAsync(SourceText, LanguageTo);

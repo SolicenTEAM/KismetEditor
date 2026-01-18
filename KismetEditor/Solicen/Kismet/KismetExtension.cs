@@ -72,12 +72,21 @@ namespace Solicen.Kismet
             return ubergraphExport?["ScriptBytecode"] as JArray;
         }
 
+        public static int GetExportCount(UAsset asset)
+        {
+            if (asset == null) return 0;
+            return asset.Exports.Count;
+        }
+
         public static KismetExpression[] GetUbergraph(UAsset asset)
         {
-            var ubergraph = asset.Exports.FirstOrDefault(x => x.ObjectName.ToString().StartsWith("ExecuteUbergraph"));
-            if (ubergraph != null)
+            if (asset != null)
             {
-                if (ubergraph is StructExport structExport) return structExport.ScriptBytecode;
+                var ubergraph = asset.Exports.FirstOrDefault(x => x.ObjectName.ToString().StartsWith("ExecuteUbergraph"));
+                if (ubergraph != null)
+                {
+                    if (ubergraph is StructExport structExport) return structExport.ScriptBytecode;
+                }
             }
             return null;
 
