@@ -44,7 +44,7 @@ Kisse.exe <input_json> <directory_path_with_assets>
 ```
 | Argument | Description |
 |----------|-------------|
-| `--include:name` `-i:name` | Include namespace::value (e.g., "ENG::Gori").
+| `--include:name` `-i:name` | Include name/key::value (e.g., "ENG::Gori").
   | `--map` `-m` | Add specified .usmap nearby .exe as mappings for processing (e.g., --map="Gori_umap.usmap").
   | `--nobak` | Disables the creation of .bak backup files.
   | `--all` | Extract all string types (includes StringTable and LocalizedSource).
