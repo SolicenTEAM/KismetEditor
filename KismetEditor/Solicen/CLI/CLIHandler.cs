@@ -44,7 +44,7 @@ namespace Solicen.CLI
                 new Argument("--all", null, "Extract all string types (includes StringTable and LocalizedSource).", () => { Config.AllowLocalizedSource = true; Config.AllowTable = true; }),
                 new Argument("--table", null, "Extract strings from StringTable assets.", () => Config.AllowTable = true),
                 new Argument("--localized", "-l", "Extract fallback localization strings (LocalizedSource). [RISKY]", () => Config.AllowLocalizedSource = true),
-                new Argument("--ext:underscore", "-u", "Allow extracting strings that contain the '_' character.", () => Config.AllowUnderscore = true),
+                new Argument("--underscore", "-u", "Allow extracting strings that contain the '_' character.", () => Config.AllowUnderscore = true),
                 new Argument("--debug", "-d", "Enables debug mode with additional information output.",() => Config.DebugMode = true),
                 new Argument("--help", "-h", "Show this help message.", () => Argumentor.ShowHelp(arguments)),
 
