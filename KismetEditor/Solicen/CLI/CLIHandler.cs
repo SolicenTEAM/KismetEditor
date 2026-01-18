@@ -49,7 +49,7 @@ namespace Solicen.CLI
                 new Argument("--help", "-h", "Show this help message.", () => Argumentor.ShowHelp(arguments)),
 
                 // Аргументы со значениями
-                new Argument("--table:only:key", null, "If key/name matches then include only this value to output.", (key) => MapParser.SearchNameSpace = key),
+                new Argument("--table:only:key", "-t:o:k", "If key/name matches then include only this value to output.", (key) => MapParser.SearchNameSpace = key),
                 new Argument("--pack:folder", "-p:f", "Translate and pack assets into auto prepared folder.", (folder) => { BytecodeModifier.PackIntoFolder = true; BytecodeModifier.PackFolder = folder; }),
                 new Argument("--version", "-v", "Set the engine version for correct processing (e.g., -v=5.1).", ProcessVersion),
                 new Argument("--lang:from", null, "Set the source language for translation (e.g., --lang:from=en).", (lang) => TranslateManager.LanguageFrom = lang),
