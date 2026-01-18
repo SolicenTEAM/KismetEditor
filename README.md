@@ -7,28 +7,28 @@ KissE is a script/tool for processing and modifying (EX_StringConst) inside the 
 [UAssetAPI](https://github.com/atenfyr/UAssetAPI) is used to work with Unreal Engine files and bytecode.
 
 Key features of kissE:
-- Allows you to extract (EX_StringConst) bytecode as string to a CSV file.
-- Ability to modify (EX_StringConst) with those specified replacement in the CSV file.
+- Allows you to extract (EX_StringConst) bytecode as string to a UberJSON file.
+- Ability to modify (EX_StringConst) with those specified replacement in the UberJSON file.
 - Corrects (EX_UnicodeStringConst) new offsets for correct work in the game.
 
 Made with ❤️ for **all** translators and translation developers.
 
 ## Usage
-* Or [download](https://github.com/SolicenTEAM/KismetEditor/releases) and **drag & drop** `(.uasset|.umap)` and `.csv` to a command tool.
+* Or [download](https://github.com/SolicenTEAM/KismetEditor/releases) and **drag & drop** `(.uasset|.umap)` to a command tool.
 * Or use `Kisse.exe <file_path>`.
 
 ### Kis(met) s(tring) E(ditor)
-* You can simply **drag & drop** `(.uasset|.umap)` and `.csv` onto `Kisse.exe` to replace (EX_StringConst). 
+* You can simply **drag & drop** `(.uasset|.umap)` and `.json` onto `Kisse.exe` to replace (EX_StringConst). 
 * Or use more advanced options with CMD.
 
 ### For single file:
 #### Extract strings from asset (.uasset|.umap)
 ```cmd
-Kisse.exe <file_path> <output_csv or null>
+Kisse.exe <file_path> <output_json or null>
 ```
 #### Replace strings in asset (.uasset|.umap)
 ```cmd 
-Kisse.exe <input_csv> <asset_path>  
+Kisse.exe <input_json> <asset_path>  
 ```
 ### For whole Directory:
 #### Extract strings from each asset (.uasset|.umap) in directory
@@ -40,14 +40,25 @@ Kisse.exe <directory_path_with_assets>
 
 #### Replace strings in each asset (.uasset|.umap) in directory
 ```cmd
-Kisse.exe <directory_path_with_csv's> <directory_path_with_assets> --pack
+Kisse.exe <input_json> <directory_path_with_assets>
 ```
 | Argument | Description |
 |----------|-------------|
-| [CommandArgs] | run terminal after process: `[UnrealPak.exe NEW_P -compress]`
-| --pack | pack translate from csv to each asset in directory
+| `--include:name` `-i:name` | Include namespace::value (e.g., "ENG::Gori").
+  | `--map` `-m` | Add specified .usmap nearby .exe as mappings for processing (e.g., --map="Gori_umap.usmap").
+  | `--nobak` | Disables the creation of .bak backup files.
+  | `--all` | Extract all string types (includes StringTable and LocalizedSource).
+  | `--table` | Extract strings from StringTable assets.
+  | `--localized` `-l` | Extract fallback localization strings (LocalizedSource). [RISKY]
+  | `--underscore` `-u` | Allow extracting strings that contain the '_' character.
+  | `--table:only:key` `-t:o:k` | If key/name matches then include only this value to output (e.g., --table:only:key=ENG).
+  | `--pack:folder` `-p:f` | Translate and pack assets into auto prepared folder (e.g., "ManicMiners_RUS")
+  | `--version` `-v` | Set the engine version for correct processing (e.g., -v=5.1)
+  | `--lang:from` `-l:f` | Set the source language for translation (e.g., --lang:from=en)
+  | `--lang:to` `-l:t` | Set the target language for translation (e.g., --lang:to=ru)
+  | `--endpoint` `-e` | Set the translation service endpoint (e.g., -e=yandex)
+  | `--run` `-r` | Execute a command in the terminal after completion (e.g., --run=[CommandArgs])
 | --debug | write additional files for debug: `Ubergraph.json`
-| --version | set specific unreal version: `--version=4.18`
 | --help | Show help information.
 
 #### Real example of [CommandArgs] usage:
