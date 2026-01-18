@@ -37,13 +37,13 @@ namespace Solicen.CLI
             {
                 // Флаги (аргументы без значений)
                 // [WIP] new Argument("--virtual", "-v", "Activate virtual provider for (.pak|.ucas).", () => Config.Virtual = true),
-                new Argument("--include:name", null, "Analyze assets instead of extract.", () => MapParser.IncludeNameSpace = true),
+                new Argument("--include:name", null, "Include namespace::value.", () => MapParser.IncludeNameSpace = true),
                 new Argument("--map", "-m", "Add specified .usmap as mappings for processing.", (map) => ProcessMappings(map)),
                 new Argument("--nobak", null, "Disables the creation of .bak backup files.", () => Config.NoBak = true),
                 new Argument("--translate", null, "Automatically translate strings using an online translator.", () => Config.Translate = true),
                 new Argument("--all", null, "Extract all string types (includes StringTable and LocalizedSource).", () => { Config.AllowLocalizedSource = true; Config.AllowTable = true; }),
                 new Argument("--table", null, "Extract strings from StringTable assets.", () => Config.AllowTable = true),
-                new Argument("--all:localized", "-l", "Extract fallback localization strings (LocalizedSource). [RISKY]", () => Config.AllowLocalizedSource = true),
+                new Argument("--localized", "-l", "Extract fallback localization strings (LocalizedSource). [RISKY]", () => Config.AllowLocalizedSource = true),
                 new Argument("--ext:underscore", "-u", "Allow extracting strings that contain the '_' character.", () => Config.AllowUnderscore = true),
                 new Argument("--debug", "-d", "Enables debug mode with additional information output.",() => Config.DebugMode = true),
                 new Argument("--help", "-h", "Show this help message.", () => Argumentor.ShowHelp(arguments)),
