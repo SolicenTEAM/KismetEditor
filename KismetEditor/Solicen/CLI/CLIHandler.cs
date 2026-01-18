@@ -37,7 +37,7 @@ namespace Solicen.CLI
             {
                 // Флаги (аргументы без значений)
                 // [WIP] new Argument("--virtual", "-v", "Activate virtual provider for (.pak|.ucas).", () => Config.Virtual = true),
-                new Argument("--include:name", null, "Include namespace::value.", () => MapParser.IncludeNameSpace = true),
+                new Argument("--include:name", "-i:name", "Include namespace::value.", () => MapParser.IncludeNameSpace = true),
                 new Argument("--map", "-m", "Add specified .usmap as mappings for processing.", (map) => ProcessMappings(map)),
                 new Argument("--nobak", null, "Disables the creation of .bak backup files.", () => Config.NoBak = true),
                 new Argument("--translate", null, "Automatically translate strings using an online translator.", () => Config.Translate = true),
