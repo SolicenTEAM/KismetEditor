@@ -44,14 +44,16 @@ Kisse.exe <input_json> <directory_path_with_assets>
 ```
 | Argument | Description |
 |----------|-------------|
-| `--include:name` `-i:name` | Include name/key::value (e.g., "ENG::Gori").
-  | `--map` `-m` | Add specified .usmap nearby .exe as mappings for processing (e.g., --map="Gori_umap.usmap").
+  |  `--api` `-a` | Set api-key for OpenRouter (e.g., --api=sk-or-v1-321313.....)
+  | `--api:model` `-a:model` | Set model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)
+| `--include:name` `-i:name` | Include name/key::value (e.g., "ENG::Gori")
+  | `--map` `-m` | Add specified .usmap nearby .exe as mappings for processing (e.g., --map="Gori_umap.usmap")
   | `--nobak` | Disables the creation of .bak backup files.
-  | `--all` | Extract all string types (includes StringTable and LocalizedSource).
+  | `--all` | Extract all string types (includes StringTable and LocalizedSource)
   | `--table` | Extract strings from Data/String Table assets.
-  | `--localized` `-l` | Extract fallback localization strings (LocalizedSource). [RISKY]
+  | `--localized` `-l` | Extract fallback localization strings (LocalizedSource) [RISKY]
   | `--underscore` `-u` | Allow extracting strings that contain the '_' character.
-  | `--table:only:key` | If key/name matches then include only this value to output (e.g., --table:only:key=ENG).
+  | `--table:only:key` | If key/name matches then include only this value to output (e.g., --table:only:key=ENG)
   | `--pack:folder` `-p:f` | Translate and pack assets into auto prepared folder (e.g., "ManicMiners_RUS")
   | `--version` `-v` | Set the engine version for correct processing (e.g., -v=5.1)
   | `--lang:from` `-l:f` | Set the source language for translation (e.g., --lang:from=en)
