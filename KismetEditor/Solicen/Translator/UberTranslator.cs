@@ -21,6 +21,7 @@ namespace Solicen.Translator
 
         public static string LanguageTo = "ru", LanguageFrom = "en", Endpoint = "yandex"; 
         public static string OpenRouterApiKey = "";
+        public static string OpenRouterModel = "tngtech/deepseek-r1t2-chimera:free";
 
         public UberTranslator()
         {
@@ -36,7 +37,7 @@ namespace Solicen.Translator
             int SegmentIndex = 1; Dictionary<string, string> result = new Dictionary<string, string>();
             int nullSegments = values.Where(s => string.IsNullOrWhiteSpace(s.Value)).ToArray().Length;
 
-            if (Endpoint.ToLower() == "deepseek")
+            if (Endpoint.ToLower() == "router")
             {
                 if (OpenRouterClient == null)
                 {
@@ -103,7 +104,7 @@ namespace Solicen.Translator
 
                 var request = new OpenRouterRequest
                 {
-                    Model = "tngtech/deepseek-r1t2-chimera:free",
+                    Model = $"{OpenRouterModel}",
                     Messages = new List<OpenRouterMessage>
                     {
                         new OpenRouterMessage { Role = "system", Content = systemPrompt },
@@ -160,7 +161,7 @@ namespace Solicen.Translator
                     if (OpenRouterClient == null) return "[Error: DeepSeek API key not configured]";
                     var request = new OpenRouterRequest
                     {
-                        Model = "tngtech/deepseek-r1t2-chimera:free",
+                        Model = $"{OpenRouterModel}",
                         Messages = new List<OpenRouterMessage>
                         {
                             new OpenRouterMessage { Role = "system", Content = $"Translate the following text from '{LanguageFrom}' to '{LanguageTo}'. Provide only the translated text." },

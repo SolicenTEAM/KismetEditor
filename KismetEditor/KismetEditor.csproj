@@ -9,7 +9,7 @@
     <PackageProjectUrl></PackageProjectUrl>
     <RepositoryUrl>https://github.com/SolicenTEAM/KismetEditor</RepositoryUrl>
     <AssemblyVersion>1.0.4.8</AssemblyVersion>
-    <FileVersion>1.0.4.7</FileVersion>
+    <FileVersion>1.0.4.8</FileVersion>
     <Version>1.0.4.8</Version>
     <PublishAot>False</PublishAot>
     <RootNamespace>Solicen</RootNamespace>

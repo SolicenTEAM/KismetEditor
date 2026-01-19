@@ -37,6 +37,7 @@ namespace Solicen.CLI
             {
                 // Флаги (аргументы без значений)
                 // [WIP] new Argument("--virtual", "-v", "Activate virtual provider for (.pak|.ucas).", () => Config.Virtual = true),
+                new Argument("--api:model", "-a:model", "Set model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)", (model) => Translator.UberTranslator.OpenRouterModel  = model),
                 new Argument("--api", "-a", "Set apikey for OpenRouter.", (key) => Translator.UberTranslator.OpenRouterApiKey = key),
                 new Argument("--include:name", "-i:name", "Include namespace::value.", () => MapParser.IncludeNameSpace = true),
                 new Argument("--map", "-m", "Add specified .usmap nearby .exe as mappings for processing (e.g., --map='Gori_umap.usmap').", (map) => ProcessMappings(map)),
