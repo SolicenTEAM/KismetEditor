@@ -34,6 +34,7 @@ Made with ❤️ for **all** translators and translation developers.
 
 | Argument | Description |
 |----------|-------------|
+  |  `-e=router` | Set endpoint to OpenRouter.
   |  `--api` `-a` | Set api-key for OpenRouter (e.g., --api=sk-or-v1-321313.....)
   | `--api:model` `-a:model` | Set model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)
 | `--include:name` `-i:name` | Include name/key::value (e.g., "ENG::Gori")
