@@ -21,27 +21,17 @@ Made with ❤️ for **all** translators and translation developers.
 * You can simply **drag & drop** `(.uasset|.umap)` and `.json` onto `Kisse.exe` to replace (EX_StringConst). 
 * Or use more advanced options with CMD.
 
-### For single file:
-#### Extract strings from asset (.uasset|.umap)
-```cmd
-Kisse.exe <file_path> <output_json or null>
-```
-#### Replace strings in asset (.uasset|.umap)
-```cmd 
-Kisse.exe <input_json> <asset_path>  
-```
-### For whole Directory:
-#### Extract strings from each asset (.uasset|.umap) in directory
-- The extracted strings will be inside each `.csv` in the `Unpack` folder.
-```cmd
-Kisse.exe <directory_path_with_assets>
-```
+> [!TIP]
+> Logic of the work in CLI:
+> #### Extract: (From) Asset/Folder => (To) JSON/OrNull
+>  ```
+> kisse <asset/folder_path> <json/null> <...args>
+> ```
+> #### Replace: (From) JSON/CSV => (To) Asset/Folder
+> ```
+> kisse <json_path> <asset/folder_path> <...args>
+> ```
 
-
-#### Replace strings in each asset (.uasset|.umap) in directory
-```cmd
-Kisse.exe <input_json> <directory_path_with_assets>
-```
 | Argument | Description |
 |----------|-------------|
   |  `--api` `-a` | Set api-key for OpenRouter (e.g., --api=sk-or-v1-321313.....)
