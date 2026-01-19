@@ -33,10 +33,10 @@ namespace Solicen.Kismet
                 {
                     return new UAsset(asset, Version);
                 }
-                catch (Exception ex)
+                catch (NullReferenceException)
                 {
                     CLI.Console.WriteLine("[Red][ERR] [White]Failed to load asset.");
-                    System.Console.WriteLine($" - {ex.Message}");
+                    System.Console.WriteLine($" - ");
                 }
             }
             return null;

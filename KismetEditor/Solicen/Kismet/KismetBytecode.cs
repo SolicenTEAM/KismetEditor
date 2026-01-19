@@ -14,7 +14,6 @@ namespace KismetEditor.Solicen
         internal const int MAGIC_FES = 060519; // | 06 | 05 | 19 | From End Script
 
         public int ModifiedInst = 0;
-        public UAsset Asset;
         public JObject JsonObject;
         public string Json => JsonObject.ToString();
         public KismetBytecode(JObject json)

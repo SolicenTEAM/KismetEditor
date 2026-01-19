@@ -40,8 +40,20 @@ namespace Solicen.Kismet
                     uberJSONCollection.Add(uberJSON);
                 }
             }
-            var json = JsonConvert.SerializeObject(uberJSONCollection, Formatting.Indented);
-            File.WriteAllText(JsonFilePath, json.ToString());
+            #region Сохранение UberJSON
+            if (File.Exists(JsonFilePath))
+            {
+                // Производим слияние двух файлов чтобы не потерять их
+                var mergeJson = UberJSONProcessor.ReadFile(JsonFilePath);
+                var merged = mergeJson.Merge(uberJSONCollection.ToArray());
+                if (merged != null)
+                    merged.SaveFile(JsonFilePath);
+            }
+            else
+            {
+                uberJSONCollection.ToArray().SaveFile(JsonFilePath);
+            }
+            #endregion
             CLI.Console.WriteLine($"[Green][SUCCESS] [White]File with extracted strings was successfully saved in:\n[DarkGray]{JsonFilePath}\n");
         }
 
@@ -90,7 +102,6 @@ namespace Solicen.Kismet
         {
             if (AllowTableExtract)
             {
-                MapParser.IncludeNameSpace = true;
                 var allTable = new List<LObject>();
                 var stringTable = MapParser.ExtractStringTableEntries(Asset);
                 var dataTable = MapParser.ExtractDataTableEntries(Asset);

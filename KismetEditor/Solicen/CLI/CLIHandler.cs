@@ -37,25 +37,26 @@ namespace Solicen.CLI
             {
                 // Флаги (аргументы без значений)
                 // [WIP] new Argument("--virtual", "-v", "Activate virtual provider for (.pak|.ucas).", () => Config.Virtual = true),
+                new Argument("--api", "-a", "Set apikey for OpenRouter.", (key) => Translator.UberTranslator.OpenRouterApiKey = key),
                 new Argument("--include:name", "-i:name", "Include namespace::value.", () => MapParser.IncludeNameSpace = true),
-                new Argument("--map", "-m", "Add specified .usmap as mappings for processing.", (map) => ProcessMappings(map)),
+                new Argument("--map", "-m", "Add specified .usmap nearby .exe as mappings for processing (e.g., --map='Gori_umap.usmap').", (map) => ProcessMappings(map)),
                 new Argument("--nobak", null, "Disables the creation of .bak backup files.", () => Config.NoBak = true),
                 new Argument("--translate", null, "Automatically translate strings using an online translator.", () => Config.Translate = true),
                 new Argument("--all", null, "Extract all string types (includes StringTable and LocalizedSource).", () => { Config.AllowLocalizedSource = true; Config.AllowTable = true; }),
-                new Argument("--table", null, "Extract strings from StringTable assets.", () => Config.AllowTable = true),
+                new Argument("--table", null, "Extract strings from Data/String Table assets.", () => Config.AllowTable = true),
                 new Argument("--localized", "-l", "Extract fallback localization strings (LocalizedSource). [RISKY]", () => Config.AllowLocalizedSource = true),
                 new Argument("--underscore", "-u", "Allow extracting strings that contain the '_' character.", () => Config.AllowUnderscore = true),
                 new Argument("--debug", "-d", "Enables debug mode with additional information output.",() => Config.DebugMode = true),
                 new Argument("--help", "-h", "Show this help message.", () => Argumentor.ShowHelp(arguments)),
 
                 // Аргументы со значениями
-                new Argument("--table:only:key", "-t:o:k", "If key/name matches then include only this value to output.", (key) => MapParser.SearchNameSpace = key),
-                new Argument("--pack:folder", "-p:f", "Translate and pack assets into auto prepared folder.", (folder) => { BytecodeModifier.PackIntoFolder = true; BytecodeModifier.PackFolder = folder; }),
+                new Argument("--table:only:key", null, "If key/name matches then include only this value to output (e.g., --table:only:key=ENG).", (key) => MapParser.SearchNameSpace = key),
+                new Argument("--pack:folder", "-p:f", "Translate and pack assets into auto prepared folder (e.g., 'ManicMiners_RUS')", (folder) => { BytecodeModifier.PackIntoFolder = true; BytecodeModifier.PackFolder = folder; }),
                 new Argument("--version", "-v", "Set the engine version for correct processing (e.g., -v=5.1).", ProcessVersion),
-                new Argument("--lang:from", "-l:f", "Set the source language for translation (e.g., --lang:from=en).", (lang) => TranslateManager.LanguageFrom = lang),
-                new Argument("--lang:to", "-l:t", "Set the target language for translation (e.g., --lang:to=ru).", (lang) => TranslateManager.LanguageTo = lang),
-                new Argument("--endpoint", "-e", "Set the translation service endpoint (e.g., -e=Yandex).", (endpoint) => TranslateManager.Endpoint = endpoint),
-                new Argument("--run", "-r", "Execute a command in the terminal after completion.", (cmd) => Config.RunCommand = cmd)
+                new Argument("--lang:from", "-l:f", "Set the source language for translation (e.g., --lang:from=en).", (lang) => UberTranslator.LanguageFrom = lang),
+                new Argument("--lang:to", "-l:t", "Set the target language for translation (e.g., --lang:to=ru).", (lang) => UberTranslator.LanguageTo = lang),
+                new Argument("--endpoint", "-e", "Set the translation service endpoint (e.g., -e=yandex).", (endpoint) => UberTranslator.Endpoint = endpoint),
+                new Argument("--run", "-r", "Execute a command in the terminal after completion (e.g., --run=[CommandArgs])", (cmd) => Config.RunCommand = cmd)
             };
         }
  
@@ -66,7 +67,7 @@ namespace Solicen.CLI
             if (System.IO.File.Exists(JsonFilePath))
             {
                 var uber = UberJSONProcessor.ReadFile(JsonFilePath);
-                var manager = new TranslateManager();
+                var manager = new UberTranslator();
                 for (int i = 0; i < uber.Length; i++)
                 {
                     CLI.Console.WriteLine($"[DarkGray][INF] [White]...{uber[i].FileName}");

@@ -18,7 +18,6 @@ namespace Solicen.Kismet
         public static UAsset Asset; static bool UseBak = true;
         public static void ModifyAsset(string path, Dictionary<string, string> replacement, bool allowTable = false)
         {
-            bool isError = false;
             JObject jsonObject = null;
             var json = string.Empty;
             Solicen.CLI.Console.StartProgress($"Replace process for: {Path.GetFileName(path)}");

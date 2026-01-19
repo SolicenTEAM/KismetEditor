@@ -54,7 +54,7 @@ namespace Solicen.Kismet
                 string finalValue = displayValue;
 
                 // Если включена опция и у строки есть ключ (сохранен в Instruction), добавляем его
-                if (IncludeNameSpace && !string.IsNullOrEmpty(value.Instruction))
+                if (IncludeNameSpace)
                 {
                     finalValue = $"{value.Instruction}::{displayValue}";
                 }

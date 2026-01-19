@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Solicen.JSON
 {
@@ -20,6 +21,17 @@ namespace Solicen.JSON
 
     static class UberJSONProcessor
     {
+        /// <summary>
+        /// Сохраняет фйл по указанному пути.
+        /// </summary>
+        /// <param name="uber"></param>
+        /// <param name="filePath"></param>
+        public static void SaveFile(this UberJSON[] uber, string filePath)
+        {
+            var json = JsonConvert.SerializeObject(uber, Formatting.Indented);
+            File.WriteAllText(filePath, json.ToString());
+        }
+
         /// <summary>
         /// Конвертирует старый CSV формат в UberJSON.
         /// </summary>
@@ -41,7 +53,7 @@ namespace Solicen.JSON
                     var key = values[0].Unescape();
                     var value = values[1].Unescape();
                     try { if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value)) uberJSON.Add(new KismetString(key, value)); }
-                    catch (Exception ex) { Console.WriteLine($"[{key}] An element with this key has already been added."); }
+                    catch { Console.WriteLine($"[{key}] An element with this key has already been added."); }
                 }
                 catch
                 {
@@ -51,6 +63,49 @@ namespace Solicen.JSON
             return new UberJSON[] { uberJSON };
         }
 
+        /// <summary>
+        /// Метод для слияния двух UberJSON в один.
+        /// </summary>
+        /// <param name="uberJSON">Текущий uberJSON</param>
+        /// <param name="otherJSON">Сливаемый uberJSON</param>
+        /// <returns></returns>
+        public static UberJSON[] Merge(this UberJSON[] uberJSON, UberJSON[] otherJSON)
+        {
+            for (int i = 0; i < uberJSON.Length; i++)
+            {
+                var c_values = uberJSON[i].GetValues();
+                var o_values = otherJSON.FirstOrDefault(x => x.FileName == uberJSON[i].FileName);
+                if (o_values != null)
+                {
+                    foreach (var value in o_values.Values)
+                    {
+                        if (c_values.ContainsKey(value.Original))
+                        {
+                            if (!string.IsNullOrWhiteSpace(value.NewValue))
+                            {
+                                if (c_values[value.Original] != value.NewValue)
+                                {
+                                    c_values[value.Original] = value.NewValue;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            c_values.TryAdd(value.Original, value.NewValue);
+                        }
+                    }
+                }
+                uberJSON[i].Clear();
+                uberJSON[i].AddRange(c_values);
+            }
+            return uberJSON;
+        }
+
+        /// <summary>
+        /// Получение данных из файла типа uberJSON.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
         public static UberJSON[] ReadFile(string filePath)
         {
             var json = System.IO.File.ReadAllText(filePath);
