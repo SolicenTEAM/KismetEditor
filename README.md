@@ -32,12 +32,11 @@ Made with ❤️ for **all** translators and translation developers.
 > kisse <json_path> <asset/folder_path> <...args>
 > ```
 
+### Main arguments:
 | Argument | Description |
 |----------|-------------|
-  |  `--api` `-a` | Set api-key for OpenRouter (e.g., --api=sk-or-v1-321313.....)
-  | `--api:model` `-a:model` | Set model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)
 | `--include:name` `-i:name` | Include name/key::value (e.g., "ENG::Gori")
-  | `--map` `-m` | Add specified .usmap nearby .exe as mappings for processing (e.g., --map="Gori_umap.usmap")
+  | `--map` `-m` | Specified .usmap nearby .exe as mappings for processing (e.g., --map="Gori_umap.usmap")
   | `--nobak` | Disables the creation of .bak backup files.
   | `--all` | Extract all string types (includes StringTable and LocalizedSource)
   | `--table` | Extract strings from Data/String Table assets.
@@ -46,12 +45,17 @@ Made with ❤️ for **all** translators and translation developers.
   | `--table:only:key` | If key/name matches then include only this value to output (e.g., --table:only:key=ENG)
   | `--pack:folder` `-p:f` | Translate and pack assets into auto prepared folder (e.g., "ManicMiners_RUS")
   | `--version` `-v` | Set the engine version for correct processing (e.g., -v=5.1)
-  | `--lang:from` `-l:f` | Set the source language for translation (e.g., --lang:from=en)
-  | `--lang:to` `-l:t` | Set the target language for translation (e.g., --lang:to=ru)
-  | `--endpoint` `-e` | Set the translation service endpoint (e.g., -e=yandex)
   | `--run` `-r` | Execute a command in the terminal after completion (e.g., --run=[CommandArgs])
 | --debug | write additional files for debug: `Ubergraph.json`
 | --help | Show help information.
+### Translator arguments:
+| Argument | Description |
+|----------|-------------|
+  | `--endpoint` `-e` | Translation service endpoint (e.g., -e=router (yandex, google, microsoft, router as OpenRouter)
+  |  `--api` `-a` | Api-key for OpenRouter (e.g., --api=sk-or-v1-321313.....)
+  | `--api:model` `-a:model` | Model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)
+  | `--lang:from` `-l:f` | Source language for translation (e.g., --lang:from=en)
+  | `--lang:to` `-l:t` | Target language for translation (e.g., --lang:to=ru)
 
 #### Real example of [CommandArgs] usage:
 ```
