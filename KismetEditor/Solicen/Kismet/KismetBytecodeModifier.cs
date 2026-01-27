@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UAssetAPI;
 
 namespace Solicen.Kismet
@@ -16,11 +17,20 @@ namespace Solicen.Kismet
         public static string PackFolder = "SolUber_PAK";
         public static bool AllowCreateBak = true;
         public static UAsset Asset; static bool UseBak = true;
+
+        private static Dictionary<string,string> RemoveAnyCode(Dictionary<string, string> replacement)
+        {
+            return replacement.Where(x => !MapParser.IsCodePart(x.Key)).ToDictionary();
+        }
+
         public static void ModifyAsset(string path, Dictionary<string, string> replacement, bool allowTable = false)
         {
             JObject jsonObject = null;
             var json = string.Empty;
             Solicen.CLI.Console.StartProgress($"Replace process for: {Path.GetFileName(path)}");
+
+            replacement = replacement.Where(x => x.Key != x.Value).ToDictionary();
+            replacement = replacement.Select(x => (x.Key.Unescape(), x.Value.Unescape())).ToDictionary();
 
             if (AllowCreateBak)
             {
@@ -44,7 +54,7 @@ namespace Solicen.Kismet
             }
             catch
             {
-                CLI.Console.WriteLine("[Red][ERR] [White]Failed to load asset. The wrong engine version maybe assigned.");
+                CLI.Console.WriteLine($"[Red][ERR] [White]Failed to load asset. The wrong engine version maybe assigned.");
                 return;
             }
 
@@ -52,13 +62,20 @@ namespace Solicen.Kismet
             var ubergraph = KismetExtension.GetUbergraphJson(Asset);
             if (ubergraph != null)
             {
+                replacement = RemoveAnyCode(replacement);
                 KismetProcessor.ReplaceAllInUbergraph(jsonObject, replacement, Asset);
                 Asset = UAsset.DeserializeJson(jsonObject.ToString());
             }
-            // Теперь обрабатываем каждое свойство StrProperty
+            // Теперь обрабатываем каждое свойство Text/Str Property 
             KismetProcessor.ReplaceAllInStrProperties(replacement, Asset);
+            KismetProcessor.ReplaceAllInTextProperties(replacement, Asset);
             if (allowTable)
+            {
                 KismetProcessor.ReplaceAllInStringTable(replacement, Asset);
+                KismetProcessor.ReplaceAllInDataTable(replacement, Asset);
+
+            }
+               
 
 
             // --- Отладочный вывод и безопасный режим (без сохранения) ---
@@ -80,8 +97,7 @@ namespace Solicen.Kismet
                     // Пытаемся получить путь текущего распакованного архива .pak|.ucas
                     virtualPath = path.UE_FolderWithoutFileName();
                 }
-
-                var folderPath = EnvironmentHelper.AssemblyDirectory + $"\\{PackFolder}\\{virtualPath}";
+                var folderPath = PackFolder.Contains("\\") ? PackFolder+$"\\{virtualPath}\\" : EnvironmentHelper.AssemblyDirectory + $"\\{PackFolder}\\{virtualPath}";
                 path = $"{folderPath}\\{fileName}";
                 Directory.CreateDirectory(folderPath);
             }

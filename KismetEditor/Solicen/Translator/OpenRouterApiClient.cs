@@ -55,7 +55,8 @@ namespace Solicen.Translator
             _apiKey = apiKey;
             _httpClient = new HttpClient
             {
-                BaseAddress = new Uri("https://openrouter.ai/api/v1/")
+                BaseAddress = new Uri("https://openrouter.ai/api/v1/"),
+                Timeout = TimeSpan.FromSeconds(500)
             };
 
             // Настраиваем заголовки, которые OpenRouter ожидает

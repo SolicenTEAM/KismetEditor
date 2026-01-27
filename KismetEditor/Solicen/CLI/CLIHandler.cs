@@ -28,6 +28,9 @@ namespace Solicen.CLI
             public static bool AllowLocalizedSource = false;
             public static bool AllowUnderscore = false;
         }
+        private static readonly string[] NotAllowedPath = new[] { 
+            "\\ThirdParty\\", "\\Scripting\\", "\\Materials\\", "\\Textures\\", "\\Terrain\\", "\\Effects\\", "\\FX\\",
+            "\\Engine\\", "\\Physics\\", "\\Plugins\\", "\\Config\\", "\\Mannequin\\", "\\StarterContent\\" };
         private static readonly string[] AllowedExtensionForAsset = new[] { ".uasset", ".umap" };
         private static readonly List<Argument> arguments;
 
@@ -62,34 +65,48 @@ namespace Solicen.CLI
         }
  
 
-        static void ProcessTranslator()
+        static void ProcessTranslator(string path)
         {
-            var JsonFilePath = EnvironmentHelper.AssemblyDirectory + "\\UberJSON.json";
+            var JsonFileName = Path.GetFileName(path);
+            if (!JsonFileName.EndsWith(".json")) return;
+            var JsonFilePath = EnvironmentHelper.AssemblyDirectory + $"\\{JsonFileName}";
             if (System.IO.File.Exists(JsonFilePath))
             {
                 var uber = UberJSONProcessor.ReadFile(JsonFilePath);
                 var manager = new UberTranslator();
-                for (int i = 0; i < uber.Length; i++)
+                if (UberTranslator.Endpoint == "router")
                 {
-                    CLI.Console.WriteLine($"[DarkGray][INF] [White]...{uber[i].FileName}");
-                    var dict = uber[i].GetValues()
-                        .Where(x => 
-                        !x.Key.IsUpperLower() && 
-                        !x.Key.IsLower() && 
-                        !x.Key.IsPath() && 
-                        !x.Key.IsAllNumber() &&
-                        !x.Key.IsUpper())
-                        .ToDictionary<string, string>();
-
-                    if (dict.Count > 0)
+                    var allValues = uber.GetAllValues().Where(x => string.IsNullOrWhiteSpace(x.Value)).ToDictionary();
+                    if (allValues.Count > 0)
                     {
-                        manager.TranslateLines(ref dict);
-                        uber[i].Clear();
-                        uber[i].AddRange(dict);
+                        manager.TranslateLines(ref allValues);
+                        uber.ReplaceAll(allValues);
+                    }
+                    else // Повторно переводим что уже есть в базе
+                    {
+                        allValues = uber.GetAllValues();
+                        uber.ReplaceAll(allValues);
+                    }
+
+                }
+                else
+                {
+                    for (int i = 0; i < uber.Length; i++)
+                    {
+                        CLI.Console.WriteLine($"[DarkGray][INF] [White]...{uber[i].FileName}");
+                        var dict = uber[i].GetValues()
+                            .Where(x =>!MapParser.IsNotAllowedString(x.Key))
+                            .ToDictionary<string, string>();
+
+                        if (dict.Count > 0)
+                        {
+                            manager.TranslateLines(ref dict);
+                            uber[i].Clear();
+                            uber[i].AddRange(dict);
+                        }
                     }
                 }
-                System.IO.File.WriteAllText(JsonFilePath, JsonConvert.SerializeObject(uber, Formatting.Indented).ToString());
-
+                uber.SaveFile(JsonFilePath);
             }
         }
 
@@ -107,9 +124,15 @@ namespace Solicen.CLI
 
         private static StringBuilder FilelistBuilder = new StringBuilder();
         private static void AddToFileList(string path) => FilelistBuilder.AppendLine($"\"{path}\"");
+
+        private static bool IsNotAllowedPath(string path)
+        {
+            if (NotAllowedPath.Any(x => path.Contains(x))) return true;
+            return false;
+        }
         private static bool IsAsset(string file)
         {
-            if (AllowedExtensionForAsset.Any(x => file.Trim('\"').EndsWith(x))) return true;
+            if ((AllowedExtensionForAsset.Any(x => file.Trim('\"').EndsWith(x))) && !IsNotAllowedPath(file)) return true;
             return false;
         }
         #region Устаревший фунционал Unpack
@@ -137,6 +160,8 @@ namespace Solicen.CLI
             MapParser.AllowUnderscore = Config.AllowUnderscore;
             MapParser.AllowLocalizedSource = Config.AllowLocalizedSource;
 
+            var UberJSONName = string.Empty;
+
             // (Откуда) JSON => Folder/Asset (куда)
             // Иначе: Asset/Folder => JSON
             if (onlyArgs.Length > 0)
@@ -147,7 +172,7 @@ namespace Solicen.CLI
 
                 bool isPack = onlyArgs[0].EndsWith(".json") || onlyArgs[0].EndsWith(".csv");
                 #region Запаковка строк
-                if (isPack) // Если это UberJSON/CSV => Folder/Asset 
+                if (isPack && onlyArgs.Length>1) // Если это UberJSON/CSV => Folder/Asset 
                 {
                     bool isFolder = !IsAsset(onlyArgs[1]);
                     bool isAsset = IsAsset(onlyArgs[1]);
@@ -169,7 +194,7 @@ namespace Solicen.CLI
                         {
                             assetFile = sortedFiles.FirstOrDefault(x => Path.GetFileNameWithoutExtension(x) == Path.GetFileNameWithoutExtension(uber.FileName));
                             var values = uber.GetValues().Where(x => !string.IsNullOrEmpty(x.Value)).ToDictionary();
-                            if (values.Count > 0)
+                            if (values.Count > 0 && assetFile != null)
                             {
                                 Kismet.BytecodeModifier.ModifyAsset(assetFile, values, Config.AllowTable);
                                 AddToFileList(assetFile);
@@ -219,6 +244,8 @@ namespace Solicen.CLI
 
                         Console.WriteLine($"[DarkGray] Extract mode / [Magenta]UberJSON");
                         CLI.Console.Separator(64);
+
+                        UberJSONName = Path.GetFileNameWithoutExtension(assetFile);
                         BytecodeExtractor.AllowTableExtract = Config.AllowTable;
                         BytecodeExtractor.ExtractAllAndWriteUberJSON(assetFile, Config.AllowUnderscore, Config.AllowLocalizedSource);
                     }
@@ -232,19 +259,23 @@ namespace Solicen.CLI
                         Console.WriteLine($"[DarkGray] Extract mode / [Magenta]UberJSON");
                         CLI.Console.Separator(64);
 
+                        UberJSONName = Path.GetFileName(onlyArgs[0]);
                         Kismet.BytecodeExtractor.AllowTableExtract = Config.AllowTable;
-                        Kismet.BytecodeExtractor.ExtractAllAndWriteUberJSON(files, Config.AllowUnderscore, Config.AllowLocalizedSource);
+                        Kismet.BytecodeExtractor.ExtractAllAndWriteUberJSON(files, Config.AllowUnderscore, Config.AllowLocalizedSource, UberJSONName);
                     }
                 }
                 #endregion
             }
+
+            var _tJson = onlyArgs.FirstOrDefault(x => x.EndsWith(".json"));
+            UberJSONName = _tJson != null ? Path.GetFileName(_tJson) : UberJSONName;
 
             if (FilelistBuilder.Length > 0)
                 System.IO.File.WriteAllText(EnvironmentHelper.AssemblyDirectory
                     + "\\mod_filelist.txt", FilelistBuilder.ToString());
 
             #region Запускаем автоматический перевод
-            if (Config.Translate) ProcessTranslator();
+            if (Config.Translate) ProcessTranslator(UberJSONName);
             #endregion
 
             #region Запускаем командную строку

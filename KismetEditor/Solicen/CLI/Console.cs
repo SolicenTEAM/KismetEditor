@@ -112,9 +112,9 @@ namespace Solicen.CLI
             }
         }
 
-        public static void WriteLine(string message, ConsoleColor color = ConsoleColor.White, int delayMs = 0, bool onLine = false)
+        public static void WriteLine(string message = "", ConsoleColor color = ConsoleColor.White, bool curLine = false)
         {
-            WriteLineAsync(message, color, delayMs, onLine).GetAwaiter().GetResult();
+            WriteLineAsync(message, color, 0, curLine).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -166,7 +166,7 @@ namespace Solicen.CLI
 
         public static void Write(string message, ConsoleColor color = ConsoleColor.White)
         {
-            WriteLine(message, color, onLine: true);
+            WriteLine(message, color, curLine: true);
         }
 
         /// <summary>

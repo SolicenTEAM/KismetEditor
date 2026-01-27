@@ -26,39 +26,59 @@ namespace Solicen
         internal const int MAGIC_TES = 200519; // | 20 | 05 | 19 | To   End Script 
         internal const int MAGIC_FES = 060519; // | 06 | 05 | 19 | From End Script
 
-        public static void ReplaceAllInStrProperties(Dictionary<string, string> replacement, UAsset _asset)
+        public static void ReplaceAllInTextProperties(Dictionary<string, string> replacement, UAsset _asset)
         {
             asset = _asset;
-            //Console.WriteLine("\n[INF] Starting a new replacement process...");
             foreach (var entry in replacement)
             {
                 string replaceFrom = entry.Key; string replaceTo = entry.Value;
-                //Console.WriteLine($"\n--- String processing: '{replaceFrom.Escape()}' ---");
-                var replaced = MapParser.ReplaceStrProperty(asset, replaceFrom, replaceTo);
+                var replaced = MapParser.ReplaceTextProperty(asset, replaceFrom, replaceTo);
                 if (replaced != 0) 
                 {
-                    //Console.WriteLine($"[INF] Occurrence of '{replaceFrom.Escape()}' has been replaced. Search for the next one...");
                     ModifiedCount += replaced;
                 } 
-                //Console.WriteLine($"--- Line processing completed: '{replaceFrom.Escape()}' ---");
+            }
+        }
+
+        public static void ReplaceAllInStrProperties(Dictionary<string, string> replacement, UAsset _asset)
+        {
+            asset = _asset;
+            foreach (var entry in replacement)
+            {
+                string replaceFrom = entry.Key; string replaceTo = entry.Value;
+                var replaced = MapParser.ReplaceStrProperty(asset, replaceFrom, replaceTo);
+                if (replaced != 0)
+                {
+                    ModifiedCount += replaced;
+                }
             }
         }
 
         public static void ReplaceAllInStringTable(Dictionary<string, string> replacement, UAsset _asset)
         {
             asset = _asset;
-            //Console.WriteLine("\n[INF] Starting a new replacement process...");
             foreach (var entry in replacement)
             {
                 string replaceFrom = entry.Key; string replaceTo = entry.Value;
-                //Console.WriteLine($"\n--- String processing: '{replaceFrom.Escape()}' ---");
                 var replaced = MapParser.ReplaceStringTableEntry(asset, entry.Key, entry.Value);
                 if (replaced != 0)
                 {
-                    //Console.WriteLine($"[INF] Occurrence of '{replaceFrom.Escape()}' has been replaced. Search for the next one...");
                     ModifiedCount += replaced;
                 }
-                //Console.WriteLine($"--- Line processing completed: '{replaceFrom.Escape()}' ---");
+            }
+        }
+
+        public static void ReplaceAllInDataTable(Dictionary<string, string> replacement, UAsset _asset)
+        {
+            asset = _asset;
+            foreach (var entry in replacement)
+            {
+                string replaceFrom = entry.Key; string replaceTo = entry.Value;
+                var replaced = MapParser.ReplaceDataTableEntry(asset, entry.Key, entry.Value);
+                if (replaced != 0)
+                {
+                    ModifiedCount += replaced;
+                }
             }
         }
 
@@ -213,8 +233,8 @@ namespace Solicen
                         var stringConstToModify = statement.SelectTokens("$..*").OfType<JObject>().FirstOrDefault(o => (o["Value"] ?? o["RawValue"])?.ToString() == replaceFrom);
                         if (stringConstToModify != null)
                         {
-                            if (stringConstToModify.ContainsKey("$type")) stringConstToModify["$type"] = stringConstToModify["$type"].ToString().Replace("StringConst", "UnicodeStringConst");
-                            if (stringConstToModify.ContainsKey("Inst")) stringConstToModify["Inst"] = stringConstToModify["Inst"].ToString().Replace("StringConst", "UnicodeStringConst");
+                            if (stringConstToModify.ContainsKey("$type")) stringConstToModify["$type"] = stringConstToModify["$type"].ToString().Replace("EX_StringConst", "EX_UnicodeStringConst");
+                            if (stringConstToModify.ContainsKey("Inst")) stringConstToModify["Inst"] = stringConstToModify["Inst"].ToString().Replace("EX_StringConst", "EX_UnicodeStringConst");
                             if (stringConstToModify.ContainsKey("Value")) stringConstToModify["Value"] = replaceTo;
                             if (stringConstToModify.ContainsKey("RawValue")) stringConstToModify["RawValue"] = replaceTo;
                         }

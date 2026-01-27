@@ -16,12 +16,13 @@ namespace Solicen.Kismet
         public static bool AllowTableExtract = false;
         public static UAsset Asset;
 
-        public static void ExtractAllAndWriteUberJSON(string asset, bool allowUnderscore = false, bool allowLocalized = false) => ExtractAllAndWriteUberJSON(new string[] { asset });
-        public static void ExtractAllAndWriteUberJSON(string[] assets, bool allowUnderscore = false, bool allowLocalized = false)
+        public static void ExtractAllAndWriteUberJSON(string asset, bool allowUnderscore = false, bool allowLocalized = false, string uberName = "UberJSON") => ExtractAllAndWriteUberJSON(new string[] { asset }, uberName: uberName);
+        public static void ExtractAllAndWriteUberJSON(string[] assets, bool allowUnderscore = false, bool allowLocalized = false, string uberName = "UberJSON")
         {
             MapParser.AllowLocalizedSource = allowLocalized;
             MapParser.AllowUnderscore = allowUnderscore;
-            var JsonFilePath = $"{EnvironmentHelper.AssemblyDirectory}\\UberJSON.json";
+            var UberJSONName = assets.Length == 1 ? Path.GetFileNameWithoutExtension(assets[0]) : uberName;
+            var JsonFilePath = $"{EnvironmentHelper.AssemblyDirectory}\\{UberJSONName}.json";
             var uberJSONCollection = new List<Solicen.JSON.UberJSON>();
             foreach (var asset in assets)
             {
@@ -32,11 +33,14 @@ namespace Solicen.Kismet
                 {
                     Asset = null; return;
                 }
-                var values = ExtractValues(asset);
-                if (values.Length > 0)
+                var allValues = ExtractValues(asset);
+                if (allValues.Length > 0)
                 {
                     var uberJSON = new UberJSON(FileName);
-                    uberJSON.AddRange(values.ToArray());
+                    foreach (var value in allValues)
+                    {
+                        uberJSON.Add(new KismetString() { KeyValue = value.KeyValue, Original = value.Value });
+                    }
                     uberJSONCollection.Add(uberJSON);
                 }
             }
@@ -47,7 +51,9 @@ namespace Solicen.Kismet
                 var mergeJson = UberJSONProcessor.ReadFile(JsonFilePath);
                 var merged = mergeJson.Merge(uberJSONCollection.ToArray());
                 if (merged != null)
+                {
                     merged.SaveFile(JsonFilePath);
+                }     
             }
             else
             {
@@ -62,7 +68,7 @@ namespace Solicen.Kismet
             Asset = AssetLoader.LoadAsset(assetPath); List<string> AllExtractedStr = new List<string>();
             if (Asset == null) return;
 
-            AllExtractedStr.AddRange(ExtractValues(assetPath));
+            //AllExtractedStr.AddRange(ExtractValues(assetPath));
             FileName = FileName == string.Empty ? Path.GetFileNameWithoutExtension(assetPath) : FileName;
             if (AllExtractedStr.Count == 0) return;
 
@@ -84,21 +90,32 @@ namespace Solicen.Kismet
             #endregion
         }
 
-        public static string[] ExtractEachStrProperty()
+        public static LObject[] ExtractEachStrProperty()
         {
             var strProperty = MapParser.ExtractStrProperties(Asset);
             if (strProperty != null && strProperty.Length > 0)
             {
-
-                CLI.Console.Write("  [DarkYellow][StrProperty] ");
-                CLI.Console.Separator(36, true, ConsoleColor.DarkYellow);
-                var values =  MapParser.ParseAsCSV(strProperty);
-                return values;
+                MapParser.OutputInformation("StrProperty", strProperty);
+                return strProperty;
             }
-            return new string[] { };
+            return Array.Empty<LObject>();
         }
 
-        public static string[] ExtractEachAnyTableValue()
+        public static LObject[] ExtractEachTextProperty()
+        {
+            if (AllowTableExtract) // Так как это рискованная операция, относиться к --all
+            {
+                var textProperty = MapParser.ExtractTextProperties(Asset);
+                if (textProperty != null && textProperty.Length > 0)
+                {
+                    MapParser.OutputInformation("TextProperty", textProperty);
+                    return textProperty;
+                }
+            }
+            return Array.Empty<LObject>();
+        }
+
+        public static LObject[] ExtractEachAnyTableValue()
         {
             if (AllowTableExtract)
             {
@@ -111,49 +128,41 @@ namespace Solicen.Kismet
 
                 if (allTable.Count > 0)
                 {
-                    CLI.Console.Write("  [DarkYellow][Table] ");
-                    CLI.Console.Separator(36, true, ConsoleColor.DarkYellow);
-                    var values = MapParser.ParseAsCSV(allTable.ToArray());
-                    return values;
+                    MapParser.OutputInformation("Table", allTable.ToArray());
+                    return allTable.ToArray();
                 }
             }
-            return new string[] { };
+            return Array.Empty<LObject>();
         }
 
-        public static string[] ExtractFromUbergraph(string assetPath)
+        public static LObject[] ExtractFromUbergraph(string assetPath)
         {
             var ubergraph = KismetExtension.GetUbergraphSerialized(Asset);
             if (ubergraph != null && ubergraph.Count > 0)
             {
-                if (CLIHandler.Config.DebugMode)
-                {
-                    var _dummyJson = KismetExtension.GetUbergraphJson(Asset);
-                    var serializer = new KismetExpressionSerializer(Asset);
-                    var u = KismetExtension.GetUbergraph(Asset);
-
-                    File.WriteAllText($"{Environment.CurrentDirectory}\\{Path.GetFileNameWithoutExtension(assetPath)}_DUMMY.json",
-                        serializer.SerializeExpressionArray(u).ToString());
-
-                }
-                return MapParser.ParseUbergraph(ubergraph);
+                var kismets = MapParser.ParseUbergraph(ubergraph);
+                if (kismets != null && kismets.Length > 0) MapParser.OutputInformation("Ubergraph", kismets);
+                return kismets;
             }
             else
             {
-                return Array.Empty<string>();
+                return Array.Empty<LObject>();
             }
 
         }
 
-        public static string[] ExtractValues(string assetPath)
+        public static LObject[] ExtractValues(string assetPath)
         {
-            List<string> AllExtractedStr = new List<string>();
+            List<LObject> AllExtractedStr = new List<LObject>();
             #region Получение строк любого вида
             var propStr = ExtractEachStrProperty(); // Получаем строки из каждого StrProperty
             var ubergraphStr = ExtractFromUbergraph(assetPath); // Получаем строки из ExecuteUbergraph
-            var tableValues = ExtractEachAnyTableValue();
+            var tableValues = ExtractEachAnyTableValue(); // Получаем строки из каждой таблицы
+            var textValues = ExtractEachTextProperty(); // Получаем строки из каждого TextProperty
             #endregion
 
             if (ubergraphStr != null) AllExtractedStr.AddRange(ubergraphStr);
+            if (textValues != null) AllExtractedStr.AddRange(textValues);
             if (propStr != null) AllExtractedStr.AddRange(propStr);
             if (tableValues != null) AllExtractedStr.AddRange(tableValues);
             if (AllExtractedStr.Count > 0) System.Console.WriteLine();

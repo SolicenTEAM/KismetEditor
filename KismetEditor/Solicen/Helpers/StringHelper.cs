@@ -58,15 +58,29 @@ static internal class StringHelper
         var letters = str.Where(c => char.IsLetter(c));
         return letters.All(c => char.IsLower(c) == true);
     }
+    public static bool IsBoolean(this string str)
+    {
+        bool.TryParse(str, out bool result);
+        if (str == "True" || str == "False") return true;
+        return result;
+    }
     public static bool IsPath(this string str)
     {
-        return false; // WIP Нужно придумать как определять остатки путей
-                      // без остальных частей которые могут относитья к тексту
+        return Regex.Match(str, @"(.*[\\].*[\\])|(.*[\/].*[\/])").Success;
+    }
+
+    public static bool IsStringDigit(this string str)
+    {
+        return Regex.Match(str, @"^\w*?[\d]").Success;
     }
     public static bool IsUpper(this string str)
     {
         var letters = str.Where(c => char.IsLetter(c));
         return letters.All(c => char.IsUpper(c) == true);
+    }
+    public static bool IsAllOne(this string str)
+    {
+        return str.All(c => c == str[0] == true);
     }
     public static bool IsAllDot(this string str)
     {

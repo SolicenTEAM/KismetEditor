@@ -14,6 +14,7 @@ namespace Solicen.Kismet
     /// </summary>
     internal class LObject
     {
+        public string KeyValue { get; }
         public int StatementIndex { get; }
         public string Value { get; }
         public string Instruction { get; }
@@ -21,13 +22,14 @@ namespace Solicen.Kismet
         public int InstructionSize { get; }
         public string FileName { get; set; }
 
-        public LObject(int statementIndex, string value, string instruction, int offset, int instructionSize)
+        public LObject(int statementIndex, string value, string instruction, int offset, int instructionSize, string keyValue = null)
         {
             StatementIndex = statementIndex;
             Value = value;
             Instruction = instruction;
             Offset = offset;
             InstructionSize = instructionSize;
+            KeyValue = keyValue;
         }
     }
 }

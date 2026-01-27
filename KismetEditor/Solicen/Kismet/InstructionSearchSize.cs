@@ -21,8 +21,8 @@ namespace Solicen.Kismet
         /// <returns>Размер инструкции в байтах.</returns>
         public static int GetSize(UAssetAPI.UAsset asset, JObject expression, KismetExpression[] ubergraph)
         {
+            if (expression == null) return 0;
             int totalSize = 0; KismetExpression expAsset = null;
-            if (expression == null) return totalSize;
             var json = expression.ToString();
             var serializer = new KismetExpressionSerializer(asset);
 
@@ -38,15 +38,12 @@ namespace Solicen.Kismet
                     Console.WriteLine("[JSON]-----------------------------------------");
                     Console.WriteLine(json);
                     Console.WriteLine("-----------------------------------------------");
-
                 }
-
-
             }
 
             #region Нахождение KismetExpression идентичного JObject
             if (expression.ToString().Contains("$type")) // Ассет был сериализован
-                expAsset = ubergraph.First(x => (serializer.SerializeExpression(x).ToString() == expression.ToString()));
+                expAsset = ubergraph.First(x => (serializer.SerializeExpression(x).ToString() == expression.ToString()));              
             else // Ассет не был сериализован можем найти так
                 expAsset = ubergraph.First(x => x.ToString() == expression.ToString());
             if (expAsset == null) return 0; // Если ничего не найдено, отправляем 0 как ошибку.
