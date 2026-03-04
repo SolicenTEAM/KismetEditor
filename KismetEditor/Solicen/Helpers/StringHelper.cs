@@ -107,4 +107,17 @@ static internal class StringHelper
         // Формат без дефисов (N).
         return Guid.TryParseExact(str, "N", out _);
     }
+
+    public static bool IsGood(this string text)
+    {
+        if (String.IsNullOrEmpty(text)) return false;
+        foreach (char c in text)
+        {
+            if ((c >= 0x00 && c <= 0x1F || c == 0x7f) 
+                && c != 0x09 && c != 0x0A && c != 0x0D)
+                return false;       
+        }
+        return true;
+
+    }
 }

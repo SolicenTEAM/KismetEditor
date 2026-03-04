@@ -41,7 +41,7 @@ namespace Solicen.Translator
             {
                 if (OpenRouterClient == null)
                 {
-                    CLI.Console.WriteLine("[Error] DeepSeek API key is not configured. Please provide the API key.");
+                    CLI.Console.WriteLine("[Error] OpenRouter API key is not configured. Please provide the API key.");
                     // Заполняем результат исходными значениями, чтобы не потерять данные
                     values = new Dictionary<string, string>(values);
                     return;
@@ -68,7 +68,6 @@ namespace Solicen.Translator
                         result.Add(entry.Key, entry.Value);
 
                     Thread.Sleep(delayBetweenMsg); SegmentIndex++;
-                    //await Task.Delay(delayBetweenMsg);
                 }
                 else
                 {

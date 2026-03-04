@@ -18,6 +18,9 @@ namespace Solicen.CLI
     {
         public static class Config
         {
+            public static bool AllDirectories = false;
+            public static bool IncludeUexpFiles = false;
+            public static bool Heuristics = false;
             public static bool Virtual = false;
             public static bool DebugMode = false;
             public static bool AllowTable = false;
@@ -29,9 +32,9 @@ namespace Solicen.CLI
             public static bool AllowUnderscore = false;
         }
         private static readonly string[] NotAllowedPath = new[] { 
-            "\\ThirdParty\\", "\\Scripting\\", "\\Materials\\", "\\Textures\\", "\\Terrain\\", "\\Effects\\", "\\FX\\",
+            "\\ThirdParty\\", "\\Materials\\", "\\Terrain\\", "\\Effects\\", "\\FX\\",
             "\\Engine\\", "\\Physics\\", "\\Plugins\\", "\\Config\\", "\\Mannequin\\", "\\StarterContent\\" };
-        private static readonly string[] AllowedExtensionForAsset = new[] { ".uasset", ".umap" };
+        private static List<string> AllowedExtensionForAsset = new List<string>() { ".uasset", ".umap" };
         private static readonly List<Argument> arguments;
 
         static CLIHandler()
@@ -52,6 +55,8 @@ namespace Solicen.CLI
                 new Argument("--underscore", "-u", "Allow extracting strings that contain the '_' character.", () => Config.AllowUnderscore = true),
                 new Argument("--debug", "-d", "Enables debug mode with additional information output.",() => Config.DebugMode = true),
                 new Argument("--help", "-h", "Show this help message.", () => Argumentor.ShowHelp(arguments)),
+                new Argument("--uexp", "-exp", "Include uexp files to process.", () => Config.IncludeUexpFiles = true),
+                new Argument("--process:all", "-p:a", "Process all directories.", () => Config.AllDirectories = true),
 
                 // Аргументы со значениями
                 new Argument("--table:only:key", null, "If key/name matches then include only this value to output (e.g., --table:only:key=ENG).", (key) => MapParser.SearchNameSpace = key),
@@ -127,11 +132,13 @@ namespace Solicen.CLI
 
         private static bool IsNotAllowedPath(string path)
         {
+            if (Config.AllDirectories) return false;
             if (NotAllowedPath.Any(x => path.Contains(x))) return true;
             return false;
         }
         private static bool IsAsset(string file)
         {
+            if (Config.IncludeUexpFiles) AllowedExtensionForAsset.Add(".uexp");
             if ((AllowedExtensionForAsset.Any(x => file.Trim('\"').EndsWith(x))) && !IsNotAllowedPath(file)) return true;
             return false;
         }
@@ -153,6 +160,7 @@ namespace Solicen.CLI
             var onlyArgs = Argumentor.Process(originalArgs, arguments);
 
             // 2. Применяем конфигурацию к другим модулям
+            BytecodeExtractor.AllowTableExtract = Config.AllowTable;
             BytecodeModifier.AllowCreateBak = !Config.NoBak;
             AssetLoader.Version = Config.Version;
 
@@ -246,8 +254,7 @@ namespace Solicen.CLI
                         CLI.Console.Separator(64);
 
                         UberJSONName = Path.GetFileNameWithoutExtension(assetFile);
-                        BytecodeExtractor.AllowTableExtract = Config.AllowTable;
-                        BytecodeExtractor.ExtractAllAndWriteUberJSON(assetFile, Config.AllowUnderscore, Config.AllowLocalizedSource);
+                        BytecodeExtractor.Direct_ExtractAllAndWriteUberJSON(assetFile);
                     }
                     if (Directory.Exists(onlyArgs[0]))// Это папка
                     {
@@ -260,8 +267,7 @@ namespace Solicen.CLI
                         CLI.Console.Separator(64);
 
                         UberJSONName = Path.GetFileName(onlyArgs[0]);
-                        Kismet.BytecodeExtractor.AllowTableExtract = Config.AllowTable;
-                        Kismet.BytecodeExtractor.ExtractAllAndWriteUberJSON(files, Config.AllowUnderscore, Config.AllowLocalizedSource, UberJSONName);
+                        Kismet.BytecodeExtractor.Direct_ExtractAllAndWriteUberJSON(files, UberJSONName);
                     }
                 }
                 #endregion

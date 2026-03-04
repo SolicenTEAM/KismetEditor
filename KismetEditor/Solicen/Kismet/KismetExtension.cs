@@ -37,11 +37,11 @@ namespace Solicen.Kismet
             string s = ""; // Заполнитель строки
             // Отнимает от общего размера магическое число 7
             int resultSize = size - (EX_ConstString + EX_Jump);
-            Parallel.For(0, resultSize, (i) =>
+            for (int i = 0; i < resultSize; i++)
             {
                 if (i < 7) s += "a";
                 else s += "1";
-            });
+            }
             return s;
         }
 

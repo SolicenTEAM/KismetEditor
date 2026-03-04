@@ -58,15 +58,8 @@ namespace Solicen.Kismet
                 return;
             }
 
-            // Сначала обрабатываем Ubergraph
-            var ubergraph = KismetExtension.GetUbergraphJson(Asset);
-            if (ubergraph != null)
-            {
-                replacement = RemoveAnyCode(replacement);
-                KismetProcessor.ReplaceAllInUbergraph(jsonObject, replacement, Asset);
-                Asset = UAsset.DeserializeJson(jsonObject.ToString());
-            }
-            // Теперь обрабатываем каждое свойство Text/Str Property 
+
+            // Обрабатываем каждое свойство Text/Str Property 
             KismetProcessor.ReplaceAllInStrProperties(replacement, Asset);
             KismetProcessor.ReplaceAllInTextProperties(replacement, Asset);
             if (allowTable)
@@ -75,8 +68,15 @@ namespace Solicen.Kismet
                 KismetProcessor.ReplaceAllInDataTable(replacement, Asset);
 
             }
-               
 
+            // Обрабатываем Ubergraph последним
+            var ubergraph = KismetExtension.GetUbergraphJson(Asset);
+            if (ubergraph != null)
+            {
+                replacement = RemoveAnyCode(replacement);
+                KismetProcessor.ReplaceAllInUbergraph(jsonObject, replacement, Asset);
+                Asset = UAsset.DeserializeJson(jsonObject.ToString());
+            }
 
             // --- Отладочный вывод и безопасный режим (без сохранения) ---
             if (CLI.CLIHandler.Config.DebugMode)

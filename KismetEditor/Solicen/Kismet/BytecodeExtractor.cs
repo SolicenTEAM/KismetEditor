@@ -16,11 +16,15 @@ namespace Solicen.Kismet
         public static bool AllowTableExtract = false;
         public static UAsset Asset;
 
-        public static void ExtractAllAndWriteUberJSON(string asset, bool allowUnderscore = false, bool allowLocalized = false, string uberName = "UberJSON") => ExtractAllAndWriteUberJSON(new string[] { asset }, uberName: uberName);
-        public static void ExtractAllAndWriteUberJSON(string[] assets, bool allowUnderscore = false, bool allowLocalized = false, string uberName = "UberJSON")
+        public static void Virtual_ExtractALlAndWriteUberJSON(UAssetAPI.PakReader pak, bool allowUnderscore = false, bool allowLocalized = false, string uberName = "UberJSON")
         {
-            MapParser.AllowLocalizedSource = allowLocalized;
-            MapParser.AllowUnderscore = allowUnderscore;
+            var assets = pak.Files();
+            
+        }
+
+        public static void Direct_ExtractAllAndWriteUberJSON(string asset, string uberName = "UberJSON") => Direct_ExtractAllAndWriteUberJSON(new string[] { asset }, uberName);
+        public static void Direct_ExtractAllAndWriteUberJSON(string[] assets, string uberName = "UberJSON")
+        {
             var UberJSONName = assets.Length == 1 ? Path.GetFileNameWithoutExtension(assets[0]) : uberName;
             var JsonFilePath = $"{EnvironmentHelper.AssemblyDirectory}\\{UberJSONName}.json";
             var uberJSONCollection = new List<Solicen.JSON.UberJSON>();
@@ -31,7 +35,7 @@ namespace Solicen.Kismet
                 Asset = AssetLoader.LoadAsset(asset);
                 if (Asset == null || KismetExtension.GetExportCount(Asset) == 0)
                 {
-                    Asset = null; return;
+                    Asset = null;
                 }
                 var allValues = ExtractValues(asset);
                 if (allValues.Length > 0)
@@ -165,6 +169,8 @@ namespace Solicen.Kismet
             if (textValues != null) AllExtractedStr.AddRange(textValues);
             if (propStr != null) AllExtractedStr.AddRange(propStr);
             if (tableValues != null) AllExtractedStr.AddRange(tableValues);
+
+            //AllExtractedStr.AddRange(ReverseE.GetAllFText(assetPath));
             if (AllExtractedStr.Count > 0) System.Console.WriteLine();
             return AllExtractedStr.ToArray();
         }

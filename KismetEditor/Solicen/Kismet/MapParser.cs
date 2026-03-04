@@ -238,6 +238,7 @@ namespace Solicen.Kismet
             }
             return results.Values.ToArray();
         }
+
         /// <summary>
         /// Заменяет запись в StringTable по ключу.
         /// </summary>
@@ -493,8 +494,8 @@ namespace Solicen.Kismet
                         string value = valueToken.ToString();
                         if (token.Ancestors().Any(a => a is JProperty p && p.Name == "AssignmentExpression")) return;
                         if (IsNotAllowedString(value)) return;
-                        if (kismets.Any(x=>x.Value != value.Escape()))
-                            kismets.Add(new LObject(statementIndex, value.Escape(), valueName, offset, 0)); 
+
+                        kismets.Add(new LObject(statementIndex, value.Escape(), valueName, offset, 0)); 
                     }
                 }
 
