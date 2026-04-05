@@ -130,7 +130,7 @@ namespace Solicen.CLI
 
             var originalColor = System.Console.ForegroundColor;
             System.Console.ForegroundColor = color;
-            System.Console.CursorVisible = false;
+            try { System.Console.CursorVisible = false; } catch { }
             IndexOnLine = 0;
             for (int i = 0; i < message.Length; i++)
             {
@@ -159,7 +159,8 @@ namespace Solicen.CLI
                 if (delayMs > 0) await Task.Delay(delayMs); // Небольшая задержка для плавности
                 IndexOnLine++;
             }
-            System.Console.CursorVisible = true;
+            try { System.Console.CursorVisible = true; } catch { }
+    
             if (!onLine) System.Console.WriteLine();
             System.Console.ForegroundColor = originalColor;
         }
@@ -182,7 +183,7 @@ namespace Solicen.CLI
             // Рисуем линию, занимающую всю ширину окна консоли
             if (!onCurrentLine)
             {
-                var newString = new string('─', maxWidth == 0 ? System.Console.WindowWidth - 1 : maxWidth);   
+                var newString = new string('═', maxWidth == 0 ? System.Console.WindowWidth - 1 : maxWidth);   
                 System.Console.WriteLine(newString);
                 IndexOnLine = 0;
             }
@@ -191,7 +192,7 @@ namespace Solicen.CLI
                 if (maxWidth == 0) maxWidth = System.Console.WindowWidth-1;
                 for(int i = 0; i < maxWidth - IndexOnLine; i++)
                 {
-                    System.Console.Write('─');
+                    System.Console.Write('═');
                 }
                 System.Console.Write('\n');
                 IndexOnLine = 0;

@@ -18,9 +18,6 @@ Made with ❤️ for **all** translators and translation developers.
 * Or use `Kisse.exe <file_path>`.
 
 ### Kis(met) s(tring) E(ditor)
-* You can simply **drag & drop** `(.uasset|.umap)` and `.json` onto `Kisse.exe` to replace (EX_StringConst). 
-* Or use more advanced options with CMD.
-
 > [!TIP]
 > Logic of the work in CLI:
 > #### Extract: (From) Asset/Folder => (To) JSON/OrNull
@@ -37,6 +34,7 @@ Made with ❤️ for **all** translators and translation developers.
 |----------|-------------|
 | `--include:name` `-i:name` | Include name/key::value (e.g., "ENG::Gori")
   | `--map` `-m` | Specified .usmap nearby .exe as mappings for processing (e.g., --map="Gori_umap.usmap")
+  | `--use:map` `-u:m` | Uses the usmap file if it finds it nearby.
   | `--nobak` | Disables the creation of .bak backup files.
   | `--all` | Extract all string types (includes StringTable and LocalizedSource)
   | `--table` | Extract strings from Data/String Table assets.
@@ -51,7 +49,7 @@ Made with ❤️ for **all** translators and translation developers.
 ### Translator arguments:
 | Argument | Description |
 |----------|-------------|
-  | `--endpoint` `-e` | Translation service endpoint (e.g., -e=router (yandex, google, microsoft, router as OpenRouter)
+  | `--endpoint` `-e` | Translation service endpoint (e.g., -e=router (yandex, google, microsoft, router as OpenRouter))
   |  `--api` `-a` | Api-key for OpenRouter (e.g., --api=sk-or-v1-321313.....)
   | `--api:model` `-a:model` | Model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)
   | `--lang:from` `-l:f` | Source language for translation (e.g., --lang:from=en)
@@ -69,7 +67,7 @@ Made with ❤️ for **all** translators and translation developers.
 
 ## Compilation
 ### Requirements
-- Visual Studio 2022 Preview
+- Visual Studio 2026
 
 ## Contributions
 * You can create your own fork of this project and contribute to its development.

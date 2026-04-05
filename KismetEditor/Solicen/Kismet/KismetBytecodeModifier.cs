@@ -8,9 +8,11 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UAssetAPI;
+using UAssetAPI.Unversioned;
 
 namespace Solicen.Kismet
 {
+    
     class BytecodeModifier
     {
         public static bool PackIntoFolder = false;
@@ -69,19 +71,21 @@ namespace Solicen.Kismet
 
             }
 
-            // Обрабатываем Ubergraph последним
             var ubergraph = KismetExtension.GetUbergraphJson(Asset);
             if (ubergraph != null)
             {
+
+
                 replacement = RemoveAnyCode(replacement);
-                KismetProcessor.ReplaceAllInUbergraph(jsonObject, replacement, Asset);
-                Asset = UAsset.DeserializeJson(jsonObject.ToString());
+                KismetProcessor.ReplaceAllInUbergraph(replacement, ref Asset);
+
+
             }
 
             // --- Отладочный вывод и безопасный режим (без сохранения) ---
             if (CLI.CLIHandler.Config.DebugMode)
             {
-                var _json = jsonObject.ToString();
+                var _json = Asset.SerializeJson(Formatting.Indented);
                 // Сохраняем итоговый JSON в файл для ручной проверки
                 File.WriteAllText($"{Environment.CurrentDirectory}\\Ubergraph.json", _json);
                 Console.WriteLine($"[INF] The modified JSON is saved in: {Environment.CurrentDirectory}\\Ubergraph.json");
@@ -90,7 +94,7 @@ namespace Solicen.Kismet
             if (PackIntoFolder)
             {
                 var fileName = Path.GetFileName(path);
-                var virtualPath = Asset.FolderName != null ? Path.GetDirectoryName(Asset.FolderName.Value) : "";
+                var virtualPath = Asset.FolderName != null ? Asset.FolderName.Value.Replace("/","\\"): "";
                 if (virtualPath == "")
                 {
                     // Если не найден виртуальный путь в ассетах (отсутствуют mappings)

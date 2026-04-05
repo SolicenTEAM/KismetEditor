@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Solicen.JSON
 {
-    class KismetString
+    public class KismetString
     {
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string KeyValue = null;
@@ -23,7 +23,7 @@ namespace Solicen.JSON
         }
     }
 
-    static class UberJSONProcessor
+    public static class UberJSONProcessor
     {
         /// <summary>
         /// Сохраняет файл по указанному пути.
@@ -179,7 +179,7 @@ namespace Solicen.JSON
         /// <returns></returns>
         public static UberJSON[] ReadFile(string filePath)
         {
-            var json = File.ReadAllText(filePath);
+            var json = File.ReadAllText(@$"{filePath}");
             return Deserialize(json);
         }
         public static UberJSON[] Deserialize(string json)
@@ -203,7 +203,7 @@ namespace Solicen.JSON
     }
 
 
-    internal class UberJSON
+    public class UberJSON
     {
         public string FileName = "";
         public List<KismetString> Values = new List<KismetString>();

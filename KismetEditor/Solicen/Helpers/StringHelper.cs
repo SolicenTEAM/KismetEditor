@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-static internal class StringHelper
+public static class StringHelper
 {
     /// <summary>
     /// Simplified string between quotation marks.

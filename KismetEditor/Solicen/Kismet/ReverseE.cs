@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 namespace Solicen.Kismet
 {
     /// <summary>
@@ -14,7 +13,7 @@ namespace Solicen.Kismet
     /// <br></br> - Небезопасен при обычном использовании.
     /// <br></br> - В том числе основан на том как UE хранит строки в ассете.
     /// </summary>
-    internal class ReverseE
+    public class ReverseE
     {
         private static byte[] GetBytes(byte[] source, int index, int count)
         {
@@ -98,10 +97,12 @@ namespace Solicen.Kismet
             return texts.Values.ToArray().OrderBy(line => line.Value).ToArray();
         }
 
-        public static LObject[] GetALlValues(string path)
+        public static LObject[] GetAllValues(string path)
         {
             var UM = new UMemory(File.ReadAllBytes(path));
             var texts = new Dictionary<string, LObject>();
+            Console.WriteLine($"Start UMemory processing file: {path}");
+
             while (!UM.EndOfFile())
             {
                 bool IsUnicode = false;
@@ -134,8 +135,6 @@ namespace Solicen.Kismet
                 {
                     UM.SetPosition(pos+1);
                 }
-                continue;
-
 
                 if (StringSize <= 12000)
                 {

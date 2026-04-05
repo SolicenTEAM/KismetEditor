@@ -12,7 +12,7 @@ namespace Solicen.Kismet
     /// Представляет собой простую Lite структуру данных (DTO) для хранения
     /// извлеченной информации об одной инструкции Kismet.
     /// </summary>
-    internal class LObject
+    public class LObject
     {
         public string KeyValue { get; }
         public int StatementIndex { get; }

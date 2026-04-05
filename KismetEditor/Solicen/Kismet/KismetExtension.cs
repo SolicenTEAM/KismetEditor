@@ -44,18 +44,6 @@ namespace Solicen.Kismet
             }
             return s;
         }
-
-        public static string FillString(string oldString)
-        {
-            string s = ""; // Заполнитель строки
-            int all = (9 + 9 + (oldString.Length + 2)) - 7;
-            Parallel.For(0, all, (i) =>
-            {
-                if (i < 7) s += "a";
-                else s += "1";
-            });
-            return s;
-        }
         public static JArray GetUbergraphSerialized(UAsset asset)
         {
             return new KismetExpressionSerializer(asset).SerializeScript(GetUbergraph(asset));
@@ -65,10 +53,12 @@ namespace Solicen.Kismet
             JArray exports = (JArray)jsonObject["Exports"];
             if (exports == null) return null;
 
+            // Примечание: Очень нестабильное получение Ubergraph если любая другая
+            //             инструкция выйдет за пределы 100 байтов.
             var ubergraphExport = exports
                 .OfType<JObject>()
-                .FirstOrDefault(e => e.ContainsKey("ScriptBytecode") && e["ScriptBytecode"] is JArray arr && arr.Count > 0);
-
+                .FirstOrDefault(e => e.ContainsKey("ScriptBytecode") 
+                && int.Parse(e["ScriptBytecodeSize"].ToString()) > 100);
             return ubergraphExport?["ScriptBytecode"] as JArray;
         }
 

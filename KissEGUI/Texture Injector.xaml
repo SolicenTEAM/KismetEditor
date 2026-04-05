@@ -1,0 +1,93 @@
+﻿<hc:Window x:Class="KissEGUI.TextureInjectorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KissEGUI"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        mc:Ignorable="d"
+        Background="#1c1c1c"
+        FontSize="13"
+       
+        Title="Texture Injector" Height="360" Width="720">
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="250" MinWidth="220" MaxWidth="350"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Левая колонка: Ассеты -->
+        <DockPanel Grid.Column="0" Margin="0,0,5,0">
+            <hc:Divider DockPanel.Dock="Top" Margin="10,5" Foreground="#FF6D6D6D" Content="Unreal Assets (uasset)" ToolTip="Drop (*.uasset) file or folder to context window."/>
+            <ListBox ItemsSource="{Binding AssetFiles}" Background="#1c1c1c" BorderThickness="1" BorderBrush="#FF2D2D2D"
+                     AllowDrop="True" Drop="AssetList_Drop" DragEnter="DragEnter_Handler">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" Content="{Binding FileName}" Foreground="White"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+                <ListBox.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Clear" Click="ClearAssets_Click"/>
+                    </ContextMenu>
+                </ListBox.ContextMenu>
+            </ListBox>
+        </DockPanel>
+
+        <!-- Средняя колонка: Дампы текстур -->
+        <DockPanel Grid.Column="1" Margin="5,0,5,0">
+            <hc:Divider DockPanel.Dock="Top" Margin="10,5" Foreground="#FF6D6D6D" Content="Texture dump (png)" ToolTip="Drop (*.png) file or folder to context window."/>
+            <ListBox ItemsSource="{Binding TextureFiles}" Background="#1c1c1c" BorderThickness="1" BorderBrush="#FF2D2D2D"
+                     AllowDrop="True" Drop="TextureList_Drop" DragEnter="DragEnter_Handler">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}" Content="{Binding FileName}" Foreground="White"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+                <ListBox.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Clear" Click="ClearTextures_Click"/>
+                    </ContextMenu>
+                </ListBox.ContextMenu>
+            </ListBox>
+        </DockPanel>
+
+        <!-- Правая колонка: Настройки -->
+        <DockPanel Grid.Column="2" Margin="5,0,0,0">
+
+            <!-- Кнопка Inject внизу -->
+            <Button DockPanel.Dock="Bottom" Width="300" Background="#326cf3" Content="Inject" Margin="0,10,0,0" Click="Inject_Click"/>
+            
+            <!-- Панель со всеми настройками -->
+            <StackPanel>
+                <!-- Выбор версии движка -->
+                <hc:Divider Margin="10,5" Foreground="#FF6D6D6D" Content="Unreal Engine Version"/>
+                <ComboBox ItemsSource="{Binding UEVersions}" DisplayMemberPath="DisplayName"
+                          SelectedValuePath="VersionEnum"
+                          SelectedValue="{Binding SelectedUEVersion}"
+                          Foreground="#FF6D6D6D" BorderBrush="#FF2D2D2D"/>
+
+                <!-- Выходной каталог -->
+                <hc:Divider Margin="10,15,10,5" Foreground="#FF6D6D6D" Content="Output Directory"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="OutputDirectoryTextBox" Text="injected" Grid.Column="0" VerticalContentAlignment="Center" BorderBrush="#FF2D2D2D" />
+                    <Button Grid.Column="1" Content="..." Margin="5,0,0,0" Click="BrowseOutput_Click" BorderBrush="#FF2D2D2D"/>
+                </Grid>
+
+                <!-- Опции -->
+                <GroupBox Header="Options" Margin="0,15,0,0" Foreground="#FF6D6D6D" Background="#1c1c1c" BorderBrush="#FF2D2D2D">
+                    <StackPanel Margin="5">
+                        <CheckBox x:Name="SkipNonTextureCheckBox" Content="Skip non-texture assets" IsChecked="True" Margin="0,5" Foreground="White"/>
+                        <CheckBox x:Name="UseCubricCheckBox" Content="Use cubric filter" IsChecked="True" Margin="0,5" Foreground="White"/>
+                        <CheckBox x:Name="UncheckNonPairedCheckBox" DockPanel.Dock="Bottom" Content="Uncheck non-paired files" IsChecked="True" Foreground="White" Margin="0,5" Checked="UncheckNonPaired_Changed" Unchecked="UncheckNonPaired_Changed"/>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </DockPanel>
+    </Grid>
+</hc:Window>

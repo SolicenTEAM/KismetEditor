@@ -17,10 +17,10 @@ namespace Solicen.KismetEditor
             Console.OutputEncoding = Encoding.UTF8;
             var vers = $"{FileVersionInfo.GetVersionInfo(AppContext.BaseDirectory+"\\KissE.exe").FileVersion}";
             CLI.Console.Separator(64);
-            CLI.Console.WriteLine($"[DarkGray][CLI] [White]KismetEditor {vers} - by Solicen (Denis Solicen)        [DarkGray]|");
-            CLI.Console.WriteLine("[DarkGray][URL] [White]https://github.com/SolicenTEAM/KismetEditor              [DarkGray]|");            
+            CLI.Console.WriteLine($"[DarkGray][CLI] [White]KismetEditor {vers} - by Solicen (Denis Solicen)        [DarkGray]");
+            CLI.Console.WriteLine("[DarkGray][URL] [White]https://github.com/SolicenTEAM/KismetEditor              [DarkGray]");            
             CLI.Console.Separator(64);
-            CLI.Console.WriteLine("[Yellow]Toss a coin: [Blue]https://boosty.to/denissolicen/donate             [DarkGray]|");
+            CLI.Console.WriteLine("[Yellow]Toss a coin: [Blue]https://boosty.to/denissolicen/donate             [DarkGray]");
             CLI.Console.Separator(64);
 
             Thread.Sleep(200);

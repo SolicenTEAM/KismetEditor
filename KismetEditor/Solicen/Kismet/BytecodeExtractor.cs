@@ -11,7 +11,7 @@ using UAssetAPI.Unversioned;
 
 namespace Solicen.Kismet
 {
-    internal static class BytecodeExtractor
+    public static class BytecodeExtractor
     {
         public static bool AllowTableExtract = false;
         public static UAsset Asset;
@@ -22,11 +22,36 @@ namespace Solicen.Kismet
             
         }
 
-        public static void Direct_ExtractAllAndWriteUberJSON(string asset, string uberName = "UberJSON") => Direct_ExtractAllAndWriteUberJSON(new string[] { asset }, uberName);
-        public static void Direct_ExtractAllAndWriteUberJSON(string[] assets, string uberName = "UberJSON")
+        private static string UberName = string.Empty;
+        public static void ExtractAndWriteUJson(string asset, string uberName = "UberJSON") 
+            => ExtractAndWriteUJson(new string[] { asset }, uberName);
+        public static void ExtractAndWriteUJson(string[] assets, string uberName = "UberJSON")
         {
-            var UberJSONName = assets.Length == 1 ? Path.GetFileNameWithoutExtension(assets[0]) : uberName;
-            var JsonFilePath = $"{EnvironmentHelper.AssemblyDirectory}\\{UberJSONName}.json";
+            UberName = assets.Any() ? Path.GetFileNameWithoutExtension(assets[0]) : uberName;
+            var JsonFilePath = $"{EnvironmentHelper.AssemblyDirectory}\\{UberName}.json";
+            var uberJSONCollection = ExtractValuesFromAssets(assets);
+
+            #region Сохранение UberJSON
+            if (File.Exists(JsonFilePath))
+            {
+                // Производим слияние двух файлов чтобы не потерять их
+                var mergeJson = UberJSONProcessor.ReadFile(JsonFilePath);
+                var merged = mergeJson.Merge(uberJSONCollection.ToArray());
+                if (merged != null)
+                {
+                    merged.SaveFile(JsonFilePath);
+                }
+            }
+            else
+            {
+                uberJSONCollection.ToArray().SaveFile(JsonFilePath);
+            }
+            #endregion
+            CLI.Console.WriteLine($"[Green][SUCCESS] [White]File with extracted strings was successfully saved in:\n[DarkGray]{JsonFilePath}\n");
+        }
+
+        public static UberJSON[] ExtractValuesFromAssets(string[] assets)
+        {
             var uberJSONCollection = new List<Solicen.JSON.UberJSON>();
             foreach (var asset in assets)
             {
@@ -37,7 +62,7 @@ namespace Solicen.Kismet
                 {
                     Asset = null;
                 }
-                var allValues = ExtractValues(asset);
+                var allValues = ExtractValuesToLiteObject(asset);
                 if (allValues.Length > 0)
                 {
                     var uberJSON = new UberJSON(FileName);
@@ -48,23 +73,9 @@ namespace Solicen.Kismet
                     uberJSONCollection.Add(uberJSON);
                 }
             }
-            #region Сохранение UberJSON
-            if (File.Exists(JsonFilePath))
-            {
-                // Производим слияние двух файлов чтобы не потерять их
-                var mergeJson = UberJSONProcessor.ReadFile(JsonFilePath);
-                var merged = mergeJson.Merge(uberJSONCollection.ToArray());
-                if (merged != null)
-                {
-                    merged.SaveFile(JsonFilePath);
-                }     
-            }
-            else
-            {
-                uberJSONCollection.ToArray().SaveFile(JsonFilePath);
-            }
-            #endregion
-            CLI.Console.WriteLine($"[Green][SUCCESS] [White]File with extracted strings was successfully saved in:\n[DarkGray]{JsonFilePath}\n");
+
+            return uberJSONCollection.ToArray();
+           
         }
 
         public static void ExtractAndWriteCSV(string assetPath, string FileName = "")
@@ -155,7 +166,7 @@ namespace Solicen.Kismet
 
         }
 
-        public static LObject[] ExtractValues(string assetPath)
+        public static LObject[] ExtractValuesToLiteObject(string assetPath)
         {
             List<LObject> AllExtractedStr = new List<LObject>();
             #region Получение строк любого вида

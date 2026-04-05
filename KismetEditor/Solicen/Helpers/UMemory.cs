@@ -7,10 +7,11 @@ using System.Threading.Tasks;
 
 namespace Solicen.Helpers
 {
-    internal class UMemory
+    public class UMemory
     {
         private int index = 0;
         private readonly byte[] _data;
+        public int Lenght => _data.Length;
         public UMemory(byte[] array)
         {
             _data = array;
@@ -37,6 +38,13 @@ namespace Solicen.Helpers
 
             byte[] result = new byte[count];
             Array.Copy(source, index, result, 0, count);
+            return result;
+        }
+
+        public byte[] GetBytes(int index, int count)
+        {
+            byte[] result = new byte[count];
+            Array.Copy(this._data, index, result, 0, count);
             return result;
         }
 
@@ -84,6 +92,17 @@ namespace Solicen.Helpers
             if ((index + count + 1) > _data.Length) return 0;
             if (count == 1) return GetBytes(result.ToArray(), 0, count)[0];
             return BitConverter.ToInt32(GetBytes(result.ToArray(), 0, count), 0);
+        }
+
+        public string GetString(int count)
+        {
+            var result = new List<byte>();
+            for (int i = 0; i < count; i++)
+            {
+                result.Add(ReadByte());
+            }
+
+            return Encoding.ASCII.GetString(result.ToArray());
         }
 
         public int GetInt32(int count = 4)

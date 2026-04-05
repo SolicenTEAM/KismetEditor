@@ -1,0 +1,194 @@
+﻿<hc:Window x:Class="KissEGUI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KissEGUI"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        mc:Ignorable="d"
+        Title="KissEGUI  " Height="450" Width="800" FontSize="13"
+        Background="#1c1c1c"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.InputBindings>
+        <KeyBinding Key="F" Modifiers="Ctrl" Command="{Binding ShowSearchCommand}"/>
+    </Window.InputBindings>
+
+    <hc:Window.NonClientAreaContent>
+        <Grid MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Menu Background="Transparent" Foreground="{DynamicResource PrimaryTextBrush}" HorizontalAlignment="Left">
+                <MenuItem Header="_File">
+                    <MenuItem Header="Open" InputGestureText="Ctrl+O" Click="OpenFile"/>
+                    <MenuItem Header="Save" InputGestureText="Ctrl+S" Click="SaveFile"/>
+                    <MenuItem Header="Save as" InputGestureText="Ctrl+Shift+S" Click="SaveAsFile"/>
+                    <MenuItem Header="Exit" InputGestureText="Alt+F4" Click="Exit_Click"/>
+                </MenuItem>
+                <MenuItem Header="_Tool">
+                    <MenuItem Header="Find" InputGestureText="Ctrl+F" Command="{Binding ShowSearchCommand}"/>
+                    <MenuItem Header="_Import">
+                        <MenuItem Header="_UberJson">
+                            <MenuItem Header="Add new values" Click="AddImport"/>
+                            <MenuItem Header="Open as new" Click="NewImport"/>
+                            <MenuItem Header="Merge values"/>
+                        </MenuItem>
+                        <MenuItem Header="_LocresCSV">
+                        </MenuItem>
+                    </MenuItem>
+                    <MenuItem Header="Set mapping file" Click="SetMappings_Click" />
+                    <MenuItem Header="Add new file" Click="AddNewTable_Click" />
+                </MenuItem>
+                <MenuItem Header="_View">
+                    <MenuItem Header="Word Wrap" IsCheckable="True" IsChecked="{Binding IsTextWrappingEnabled, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}" Click="TextWrapMenuItem_Click"/>
+                    <MenuItem Header="Zoom In" Click="TextZoomIn_Click"/>
+                    <MenuItem Header="Zoom Out" Click="TextZoomOut_Click"/>
+                </MenuItem>
+                <MenuItem Header="_Extra">
+                    <MenuItem Header="Texture Injector" Click="OpenTextureInjector"/>
+                </MenuItem>
+                <MenuItem Header="_About">
+                    <MenuItem Header="Donate"/>
+                    <MenuItem Header="About"/>
+                </MenuItem>
+            </Menu>
+            <!-- Контейнер для выбора версии UE, выровненный по правому краю -->
+            <ComboBox ItemsSource="{Binding UEVersions}" DisplayMemberPath="DisplayName"
+                      SelectedValuePath="VersionEnum"
+                      SelectedValue="{Binding SelectedUEVersion}"
+                      MinWidth="120" VerticalAlignment="Center" HorizontalAlignment="Right"
+                      Foreground="#FF6D6D6D"
+                      BorderBrush="Transparent"
+                      Margin="0,0,0,0"/>
+        </Grid>
+    </hc:Window.NonClientAreaContent>
+
+    <Window.Resources>
+        <local:WidthConverter x:Key="WidthConverter" />
+    </Window.Resources>
+    <Grid  Background="#1c1c1c">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="280" MinWidth="30" MaxWidth="300"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="350" MinWidth="30" MaxWidth="450"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Левая колонка: Обозреватель файлов -->
+        <Border Grid.Column="0" BorderThickness="1" Margin="10" Padding="4" AllowDrop="True" DragEnter="FileDrop_DragEnter" Drop="FileDrop_Drop">
+            <DockPanel>
+                <hc:SearchBar DockPanel.Dock="Top" Margin="0,0,0,5" BorderBrush="#FF2D2D2D" hc:InfoElement.Placeholder="Filter files..." TextChanged="FileFilter_TextChanged"/>
+                <ListBox x:Name="FileListBox" ItemsSource="{Binding ItemsView}" MouseDoubleClick="FileExplorer_MouseDoubleClick" BorderThickness="0, 1, 1, 1" BorderBrush="#FF2D2D2D" Background="#1c1c1c">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type local:DataItem}">
+                            <Grid>
+                                <TextBlock x:Name="DisplayTextBlock" Text="{Binding FileName}" Visibility="Visible"/>
+                                <TextBox x:Name="EditTextBox" Text="{Binding FileName, UpdateSourceTrigger=Explicit}" Visibility="Collapsed"
+                                         KeyDown="RenameTextBox_KeyDown" LostFocus="RenameTextBox_LostFocus" Loaded="RenameTextBox_Loaded"/>
+                            </Grid>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                    <Setter TargetName="DisplayTextBlock" Property="Visibility" Value="Collapsed"/>
+                                    <Setter TargetName="EditTextBox" Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                    <ListBox.ContextMenu>
+                        <ContextMenu Style="{StaticResource ContextMenu.Small}" Padding="4">
+                            <MenuItem Header="Rename" Click="RenameFile_Click"/>
+                            <MenuItem Header="Row">
+                                <MenuItem Header="Add Row" Click="AddRowToFile_Click" Padding="4"/>
+                            </MenuItem>
+                            <MenuItem Header="Delete" Click="DeleteFile_Click"/>
+                        </ContextMenu>
+                    </ListBox.ContextMenu>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <!-- Разделитель -->
+        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent"/>
+
+        <!-- Правая колонка: Основная рабочая область -->
+        <Grid Grid.Column="2" AllowDrop="True" DragEnter="FileDrop_DragEnter" Drop="FileDrop_Drop" >
+            <hc:TabControl FontSize="14" x:Name="MainTabControl" IsAnimationEnabled="True" ShowOverflowButton="False"  IsScrollable="True" ShowCloseButton="True" IsDraggable="True" BorderBrush="#1c1c1c" Background="#1c1c1c" SelectionChanged="MainTabControl_SelectionChanged">
+                <hc:TabControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel IsItemsHost="True"/></ItemsPanelTemplate>
+                </hc:TabControl.ItemsPanel>
+            </hc:TabControl>
+
+            <!-- Панель поиска -->
+            <Border x:Name="SearchPanel" CornerRadius="3" Padding="5" BorderThickness="1"
+                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,5,0" Visibility="Collapsed">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <hc:TextBox x:Name="SearchTextBox" hc:InfoElement.Placeholder="Find" Width="200" TextChanged="SearchTextBox_TextChanged"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="5,0,0,0">
+                        <Button Content="▲" Padding="5,0" Click="PrevButton_Click" ToolTip="Previous Match"/>
+                        <Button Content="▼" Padding="5,0" Margin="2,0,0,0" Click="NextButton_Click" ToolTip="Next Match"/>
+                        <Button Content="✕" Padding="5,0" Margin="5,0,0,0" Click="CloseSearch_Click" ToolTip="Close"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Разделитель -->
+        <GridSplitter Grid.Column="3" Width="5" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent"/>
+
+        <!-- Правая колонка: Память переводов -->
+        <Border Grid.Column="4" BorderThickness="1, 0, 0, 0" Margin="20, 0, 0 ,0" Padding="0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition MaxHeight="20" Height="20"/>
+                    <RowDefinition MaxHeight="300" Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Блок выбора языка -->
+                <Grid Grid.Row="0">
+                    <ComboBox ItemsSource="{Binding Languages}" DisplayMemberPath="Name" SelectedValuePath="IsoCode"
+                              SelectedValue="{Binding SourceLanguage, Mode=TwoWay}"
+                              HorizontalAlignment="Left" Margin="0,0,0,0" Foreground="#FF6D6D6D" BorderBrush="#FF2D2D2D"/>
+                    <ComboBox ItemsSource="{Binding Languages}" DisplayMemberPath="Name" SelectedValuePath="IsoCode"
+                              SelectedValue="{Binding TargetLanguage, Mode=TwoWay}"
+                              HorizontalAlignment="Right" Margin="0,0,0,0" Foreground="#FF6D6D6D" BorderBrush="#FF2D2D2D"/>
+                </Grid>
+
+                <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="Transparent"/>
+
+                <!-- Блок памяти переводов (TM) -->
+                <DockPanel Grid.Row="2" MaxHeight="250">
+                    <hc:Divider DockPanel.Dock="Top" Margin="10,5" Foreground="#FF6D6D6D" Content="(TM) Translation Memory"/>
+                    <ListBox ItemsSource="{Binding TranslationMemorySuggestions}" Background="#1c1c1c" BorderThickness="1" BorderBrush="#FF2D2D2D">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="2">
+                                    <TextBlock FontSize="14" Text="{Binding Text}" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding Similarity, StringFormat='Similarity: {0:F0}%'}" FontSize="12" Foreground="Goldenrod"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+
+                <GridSplitter Grid.Row="3" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="Transparent"/>
+
+                <!-- Блок онлайн-подсказок -->
+                <DockPanel Grid.Row="4">
+                    <hc:Divider DockPanel.Dock="Top" Margin="10,5" Foreground="#FF6D6D6D" Content="Suggestions"/>
+                    <ListBox ItemsSource="{Binding OnlineSuggestions}" Background="#1c1c1c" BorderThickness="1" BorderBrush="#FF2D2D2D">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="4">
+                                    <TextBlock Foreground="#FF9D9D9D" FontSize="14" Text="{Binding Text}" TextWrapping="Wrap"/>
+                                    <TextBlock FontSize="12" Text="{Binding ServiceName}" Foreground="DodgerBlue"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</hc:Window>

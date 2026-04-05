@@ -8,9 +8,9 @@
     <Description>Kismet extractor and string replacer.</Description>
     <PackageProjectUrl></PackageProjectUrl>
     <RepositoryUrl>https://github.com/SolicenTEAM/KismetEditor</RepositoryUrl>
-    <AssemblyVersion>1.0.5.0</AssemblyVersion>
-    <FileVersion>1.0.5.0</FileVersion>
-    <Version>1.0.5.0</Version>
+    <AssemblyVersion>1.0.5.1</AssemblyVersion>
+    <FileVersion>1.0.5.1</FileVersion>
+    <Version>1.0.5.1</Version>
     <PublishAot>False</PublishAot>
     <RootNamespace>Solicen</RootNamespace>
   </PropertyGroup>

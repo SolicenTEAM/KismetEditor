@@ -6,11 +6,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices.JavaScript;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using UAssetAPI;
 using UAssetAPI.Kismet;
 using UAssetAPI.Kismet.Bytecode;
 using UAssetAPI.PropertyTypes.Structs;
+using UAssetAPI.Unversioned;
 
 namespace Solicen
 {
@@ -21,18 +24,18 @@ namespace Solicen
     {
         public static bool DebugMode = true;
         public static int ModifiedCount = 0;
-        public static UAsset asset;
+        public static UAsset Asset;
 
         internal const int MAGIC_TES = 200519; // | 20 | 05 | 19 | To   End Script 
         internal const int MAGIC_FES = 060519; // | 06 | 05 | 19 | From End Script
 
         public static void ReplaceAllInTextProperties(Dictionary<string, string> replacement, UAsset _asset)
         {
-            asset = _asset;
+            Asset = _asset;
             foreach (var entry in replacement)
             {
                 string replaceFrom = entry.Key; string replaceTo = entry.Value;
-                var replaced = MapParser.ReplaceTextProperty(asset, replaceFrom, replaceTo);
+                var replaced = MapParser.ReplaceTextProperty(Asset, replaceFrom, replaceTo);
                 if (replaced != 0) 
                 {
                     ModifiedCount += replaced;
@@ -42,11 +45,11 @@ namespace Solicen
 
         public static void ReplaceAllInStrProperties(Dictionary<string, string> replacement, UAsset _asset)
         {
-            asset = _asset;
+            Asset = _asset;
             foreach (var entry in replacement)
             {
                 string replaceFrom = entry.Key; string replaceTo = entry.Value;
-                var replaced = MapParser.ReplaceStrProperty(asset, replaceFrom, replaceTo);
+                var replaced = MapParser.ReplaceStrProperty(Asset, replaceFrom, replaceTo);
                 if (replaced != 0)
                 {
                     ModifiedCount += replaced;
@@ -56,11 +59,11 @@ namespace Solicen
 
         public static void ReplaceAllInStringTable(Dictionary<string, string> replacement, UAsset _asset)
         {
-            asset = _asset;
+            Asset = _asset;
             foreach (var entry in replacement)
             {
                 string replaceFrom = entry.Key; string replaceTo = entry.Value;
-                var replaced = MapParser.ReplaceStringTableEntry(asset, entry.Key, entry.Value);
+                var replaced = MapParser.ReplaceStringTableEntry(Asset, entry.Key, entry.Value);
                 if (replaced != 0)
                 {
                     ModifiedCount += replaced;
@@ -70,11 +73,11 @@ namespace Solicen
 
         public static void ReplaceAllInDataTable(Dictionary<string, string> replacement, UAsset _asset)
         {
-            asset = _asset;
+            Asset = _asset;
             foreach (var entry in replacement)
             {
                 string replaceFrom = entry.Key; string replaceTo = entry.Value;
-                var replaced = MapParser.ReplaceDataTableEntry(asset, entry.Key, entry.Value);
+                var replaced = MapParser.ReplaceDataTableEntry(Asset, entry.Key, entry.Value);
                 if (replaced != 0)
                 {
                     ModifiedCount += replaced;
@@ -82,9 +85,14 @@ namespace Solicen
             }
         }
 
-        public static void ReplaceAllInUbergraph(JObject assetJsonObject, Dictionary<string, string> replacement, UAsset _asset)
+        public static void ReplaceAllInUbergraph(Dictionary<string, string> replacement, ref UAsset _Asset)
         {
-            asset = _asset;
+            Asset = _Asset;
+
+            // Сохраняем то, что нельзя потерять
+            var assetJsonObject = JObject.Parse(Asset.SerializeJson());
+            var tempUsmap = Asset.Mappings != null ? Asset.Mappings : new Usmap();
+     
             //Console.WriteLine("\n[INF] Starting a new replacement process...");
             foreach (var entry in replacement)
             {
@@ -100,6 +108,10 @@ namespace Solicen
                 //Solicen.CLI.Console.StopProgress($"[INF] Replace processing completed: {replaceFrom.Escape()}");
                 //Console.WriteLine($"--- Line processing completed: '{replaceFrom.Escape()}' ---");
             }
+
+            _Asset = UAsset.DeserializeJson(assetJsonObject.ToString());
+            if (tempUsmap.FilePath != null) _Asset.Mappings = tempUsmap;
+
             //Console.WriteLine("\n[INF] Replacement process is fully completed.");
         }
 
@@ -107,7 +119,7 @@ namespace Solicen
         {
             // Шаг 1: Получаем "живой" уберграф для поиска и модификации
             var liveUbergraph = KismetExtension.GetUbergraph(assetJsonObject);
-            var bytecode = KismetExtension.GetUbergraph(asset);
+            var bytecode = KismetExtension.GetUbergraph(Asset);
 
             if (liveUbergraph == null)
             {
@@ -117,17 +129,16 @@ namespace Solicen
 
             // Шаг 2: Рекурсивно ищем и сразу заменяем первое найденное вхождение
             bool replaced = FindAndReplaceRecursively(liveUbergraph, liveUbergraph, bytecode, replaceFrom, replaceTo);
-
             if (replaced)
             {
                 // Шаги 6-8: Если замена произошла, пересчитываем смещения
                 //Console.WriteLine("[INF] Recalculation and patching of offsets...");
                 // Для пересчета нам снова нужен сериализованный ассет
-                asset = UAsset.DeserializeJson(assetJsonObject.ToString());
-                var newUbergraph = KismetExtension.GetUbergraphJson(asset);
+                Asset = UAsset.DeserializeJson(assetJsonObject.ToString());
+                var newUbergraph = KismetExtension.GetUbergraphJson(Asset);   
 
                 // Для получения карты смещений нам нужен полный список инструкций
-                var newInstructionMap = MapParser.CreateMap(newUbergraph, asset, false);
+                var newInstructionMap = MapParser.CreateMap(newUbergraph, Asset, false);
                 //var debugMap = MapParser.CreateMap(newUbergraph, asset, true);
                 var newToEnd = OffsetCalculator.GetOffset(newInstructionMap, MAGIC_TES);
                 var newFromEnd = OffsetCalculator.GetOffset(newInstructionMap, MAGIC_FES);
@@ -212,7 +223,7 @@ namespace Solicen
                         if (originalIndex == -1) return false; // Не смогли найти индекс, что-то пошло не так
 
                         scriptBytecodeArray.RemoveAt(originalIndex);       
-                        var size = InstructionSearchSize.GetSize(asset, statement, ubergraph);
+                        var size = InstructionSearchSize.GetSize(Asset, statement, ubergraph);
                         /*
                         Console.WriteLine($"[INF] Step 1: Calculate the size of all instructions.");
                         Console.WriteLine($"[INF] Step 2: Calculate the placeholder size.");

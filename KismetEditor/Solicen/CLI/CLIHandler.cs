@@ -4,12 +4,14 @@ using Solicen.JSON;
 using Solicen.Kismet;
 using Solicen.Translator;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using UAssetAPI;
+using UAssetAPI.UnrealTypes;
 using static System.Net.WebRequestMethods;
 
 namespace Solicen.CLI
@@ -57,6 +59,9 @@ namespace Solicen.CLI
                 new Argument("--help", "-h", "Show this help message.", () => Argumentor.ShowHelp(arguments)),
                 new Argument("--uexp", "-exp", "Include uexp files to process.", () => Config.IncludeUexpFiles = true),
                 new Argument("--process:all", "-p:a", "Process all directories.", () => Config.AllDirectories = true),
+
+                //
+                new Argument("--use:map", "-u:m", "Uses the usmap file if it finds it nearby.", () => UseAnyMappingNearby()),
 
                 // Аргументы со значениями
                 new Argument("--table:only:key", null, "If key/name matches then include only this value to output (e.g., --table:only:key=ENG).", (key) => MapParser.SearchNameSpace = key),
@@ -115,12 +120,27 @@ namespace Solicen.CLI
             }
         }
 
+        static void UseAnyMappingNearby()
+        {
+            var anyMappings = Directory.GetFiles(EnvironmentHelper.AssemblyDirectory, "*.usmap");
+            var path = anyMappings.FirstOrDefault();
+            if (System.IO.File.Exists(path))
+            {
+                AssetLoader.MappingsPath = path;
+            }
+        }
+
         static void ProcessMappings(string map)
         {
-            var anyMappings = Directory.GetFiles(EnvironmentHelper.AssemblyDirectory, "*.usmap")
+            var path = string.Empty; 
+            if (!map.Contains("\\"))
+            {
+                var anyMappings = Directory.GetFiles(EnvironmentHelper.AssemblyDirectory, "*.usmap")
                 .Where(x => Path.GetFileName(x).StartsWith(map));
-            
-            var path = anyMappings.FirstOrDefault();
+                path = anyMappings.FirstOrDefault();      
+            }
+            else
+                path = map;
             if (System.IO.File.Exists(path))
             {
                 AssetLoader.MappingsPath = path;
@@ -213,7 +233,7 @@ namespace Solicen.CLI
                     {
                         Console.WriteLine($"[DarkGray] Replacement mode / [Magenta]UberJSON");
                         CLI.Console.Separator(64);
-                        var uber = uberJSONCollection.FirstOrDefault(x => Path.GetFileName(assetFile) == Path.GetFileNameWithoutExtension(x.FileName));
+                        var uber = uberJSONCollection.FirstOrDefault(x => Path.GetFileNameWithoutExtension(assetFile) == Path.GetFileNameWithoutExtension(x.FileName));
                         if (uber != null)
                         {
                             var values = uber.GetValues().Where(x => !string.IsNullOrEmpty(x.Value)).ToDictionary();
@@ -254,7 +274,7 @@ namespace Solicen.CLI
                         CLI.Console.Separator(64);
 
                         UberJSONName = Path.GetFileNameWithoutExtension(assetFile);
-                        BytecodeExtractor.Direct_ExtractAllAndWriteUberJSON(assetFile);
+                        BytecodeExtractor.ExtractAndWriteUJson(assetFile);
                     }
                     if (Directory.Exists(onlyArgs[0]))// Это папка
                     {
@@ -267,7 +287,7 @@ namespace Solicen.CLI
                         CLI.Console.Separator(64);
 
                         UberJSONName = Path.GetFileName(onlyArgs[0]);
-                        Kismet.BytecodeExtractor.Direct_ExtractAllAndWriteUberJSON(files, UberJSONName);
+                        Kismet.BytecodeExtractor.ExtractAndWriteUJson(files, UberJSONName);
                     }
                 }
                 #endregion
