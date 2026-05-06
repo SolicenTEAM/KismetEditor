@@ -220,10 +220,11 @@ namespace Solicen
                     {
                         //Console.WriteLine($"[INF] A candidate with the string '{replaceFrom.Escape()}' was found. Apply filters...");
                         // Применяем фильтры
-                        if (token.Ancestors().Any(ancestor => ancestor is JProperty prop && prop.Name == "AssignmentExpression"))
+                        if (!CLI.CLIHandler.Config.PatchAssignments
+                            && token.Ancestors().Any(ancestor => ancestor is JProperty prop && prop.Name == "AssignmentExpression"))
                         {
                             //Console.WriteLine("[INF] Filtered: located in the 'AssignmentExpression'.");
-                            return false; // Продолжаем поиск
+                            return false; // skipped unless --patch-assignments
                         }
 
                         // Шаг 1-3: Находим корневой Statement в "живом" уберграфе
