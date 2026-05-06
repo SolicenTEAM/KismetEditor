@@ -53,11 +53,21 @@ namespace Solicen.Kismet
             JArray exports = (JArray)jsonObject["Exports"];
             if (exports == null) return null;
 
-            // Примечание: Очень нестабильное получение Ubergraph если любая другая
-            //             инструкция выйдет за пределы 100 байтов.
+            // Prefer ObjectName "ExecuteUbergraph*" (stable, matches the UAsset overload
+            // below); fall back to the size heuristic when ObjectName isn't in the JSON.
+            var byName = exports
+                .OfType<JObject>()
+                .FirstOrDefault(e => e.ContainsKey("ScriptBytecode")
+                    && e["ObjectName"]?.ToString() is string name
+                    && name.StartsWith("ExecuteUbergraph", StringComparison.Ordinal));
+            if (byName != null)
+            {
+                return byName["ScriptBytecode"] as JArray;
+            }
+
             var ubergraphExport = exports
                 .OfType<JObject>()
-                .FirstOrDefault(e => e.ContainsKey("ScriptBytecode") 
+                .FirstOrDefault(e => e.ContainsKey("ScriptBytecode")
                 && int.Parse(e["ScriptBytecodeSize"].ToString()) > 100);
             return ubergraphExport?["ScriptBytecode"] as JArray;
         }
