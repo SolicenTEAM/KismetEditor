@@ -92,6 +92,59 @@ namespace Solicen.Kismet
 
         }
 
+        /// <summary>
+        /// Returns every export with a non-empty ScriptBytecode, paired with the corresponding
+        /// JArray inside <paramref name="jsonObject"/> (the live, mutable copy used for
+        /// replacement) and the deserialized <c>KismetExpression[]</c> from
+        /// <paramref name="asset"/> (used for size/offset calculations).
+        /// Used by --patch-all-functions to extend the replace pipeline beyond the single
+        /// ExecuteUbergraph_* function.
+        /// </summary>
+        public static List<(string name, JArray jsonBytecode, KismetExpression[] exprBytecode)>
+            GetAllScriptBytecode(JObject jsonObject, UAsset asset)
+        {
+            var result = new List<(string, JArray, KismetExpression[])>();
+            if (asset == null || jsonObject == null)
+            {
+                return result;
+            }
 
+            var assetByName = new Dictionary<string, KismetExpression[]>();
+            foreach (var ex in asset.Exports)
+            {
+                if (ex is StructExport se && se.ScriptBytecode != null && se.ScriptBytecode.Length > 0)
+                {
+                    assetByName[ex.ObjectName.ToString()] = se.ScriptBytecode;
+                }
+            }
+
+            if (jsonObject["Exports"] is not JArray jExports)
+            {
+                return result;
+            }
+
+            foreach (var jExp in jExports.OfType<JObject>())
+            {
+                if (!jExp.ContainsKey("ScriptBytecode"))
+                {
+                    continue;
+                }
+                var name = jExp["ObjectName"]?.ToString();
+                if (name == null)
+                {
+                    continue;
+                }
+                if (!assetByName.TryGetValue(name, out var expr))
+                {
+                    continue;
+                }
+                if (jExp["ScriptBytecode"] is not JArray jBc || jBc.Count == 0)
+                {
+                    continue;
+                }
+                result.Add((name, jBc, expr));
+            }
+            return result;
+        }
     }
 }
