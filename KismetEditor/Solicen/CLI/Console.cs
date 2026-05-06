@@ -215,6 +215,15 @@ namespace Solicen.CLI
         /// <param name="message">Сообщение, отображаемое рядом с индикатором.</param>
         public static void StartProgress(string message)
         {
+            // Spinner manipulates the cursor (CursorLeft / SetCursorPosition); without an
+            // interactive TTY those throw IOException, which escapes the async Task as an
+            // unobserved exception. Fall back to a plain WriteLine.
+            if (System.Console.IsOutputRedirected)
+            {
+                WriteLine(message);
+                return;
+            }
+
             // Останавливаем предыдущий индикатор, если он был запущен
             StopProgress();
             System.Console.WriteLine();
