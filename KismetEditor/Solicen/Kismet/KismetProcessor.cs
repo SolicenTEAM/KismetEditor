@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using UAssetAPI;
 using UAssetAPI.Kismet;
 using UAssetAPI.Kismet.Bytecode;
+using UAssetAPI.Kismet.Bytecode.Expressions;
 using UAssetAPI.PropertyTypes.Structs;
 using UAssetAPI.Unversioned;
 
@@ -131,25 +132,46 @@ namespace Solicen
             bool replaced = FindAndReplaceRecursively(liveUbergraph, liveUbergraph, bytecode, replaceFrom, replaceTo);
             if (replaced)
             {
-                // Шаги 6-8: Если замена произошла, пересчитываем смещения
-                //Console.WriteLine("[INF] Recalculation and patching of offsets...");
-                // Для пересчета нам снова нужен сериализованный ассет
+                // Re-deserialize so the new ScriptBytecode reflects the placeholder + jump
+                // and the appended modified statement + return jump.
                 Asset = UAsset.DeserializeJson(assetJsonObject.ToString());
-                var newUbergraph = KismetExtension.GetUbergraphJson(Asset);   
 
-                // Для получения карты смещений нам нужен полный список инструкций
-                var newInstructionMap = MapParser.CreateMap(newUbergraph, Asset, false);
-                //var debugMap = MapParser.CreateMap(newUbergraph, asset, true);
-                var newToEnd = OffsetCalculator.GetOffset(newInstructionMap, MAGIC_TES);
-                var newFromEnd = OffsetCalculator.GetOffset(newInstructionMap, MAGIC_FES);
+                // Compute MAGIC_TES / MAGIC_FES targets via KismetExpression.Visit(),
+                // which mirrors ExpressionSerializer.WriteExpression byte-for-byte. The
+                // SerializeScript + StatementIndex pipeline can drift from the actual
+                // Write() output on some bytecode shapes, leaving magic-numbers patched
+                // mid-instruction.
+                var newBytecode = KismetExtension.GetUbergraph(Asset);
+                int idxTes = -1;
+                int idxFes = -1;
+                var topLevelOffsets = new uint[newBytecode.Length];
+                uint runningOffset = 0;
+                for (int i = 0; i < newBytecode.Length; i++)
+                {
+                    topLevelOffsets[i] = runningOffset;
+                    var ex = newBytecode[i];
+                    if (ex is EX_Jump jx)
+                    {
+                        if (jx.CodeOffset == MAGIC_TES && idxTes < 0)
+                        {
+                            idxTes = i;
+                        }
+                        else if (jx.CodeOffset == MAGIC_FES && idxFes < 0)
+                        {
+                            idxFes = i;
+                        }
+                    }
+                    uint after = runningOffset;
+                    ex.Visit(Asset, ref after, (_, _) => { });
+                    runningOffset = after;
+                }
+
+                int newToEnd = idxTes >= 0 && idxTes + 2 < topLevelOffsets.Length ? (int)topLevelOffsets[idxTes + 2] : 0;
+                int newFromEnd = idxFes >= 1 ? (int)topLevelOffsets[idxFes - 1] : 0;
 
                 if (newToEnd <= 0 || newFromEnd <= 0)
                 {
                     Console.WriteLine($"[WRN] Offsets could not be calculated (ToEnd: {newToEnd}, FromEnd: {newFromEnd}). The process may be unstable.");
-                }
-                else
-                {
-                    //Console.WriteLine($"[INF] New offsets have been calculated (ToEnd -> {newToEnd}, FromEnd -> {newFromEnd})");
                 }
 
                 // Заменяем магические числа на реальные смещения в "живом" JObject
