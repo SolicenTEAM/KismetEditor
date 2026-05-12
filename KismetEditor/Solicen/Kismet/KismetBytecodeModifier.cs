@@ -71,15 +71,19 @@ namespace Solicen.Kismet
 
             }
 
-            var ubergraph = KismetExtension.GetUbergraphJson(Asset);
-            if (ubergraph != null)
+            if (CLI.CLIHandler.Config.PatchAllFunctions)
             {
-
-
                 replacement = RemoveAnyCode(replacement);
-                KismetProcessor.ReplaceAllInUbergraph(replacement, ref Asset);
-
-
+                KismetProcessor.ReplaceAllInAllFunctions(replacement, ref Asset);
+            }
+            else
+            {
+                var ubergraph = KismetExtension.GetUbergraphJson(Asset);
+                if (ubergraph != null)
+                {
+                    replacement = RemoveAnyCode(replacement);
+                    KismetProcessor.ReplaceAllInUbergraph(replacement, ref Asset);
+                }
             }
 
             // --- Отладочный вывод и безопасный режим (без сохранения) ---

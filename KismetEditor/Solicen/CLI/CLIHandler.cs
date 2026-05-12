@@ -32,6 +32,7 @@ namespace Solicen.CLI
             public static bool NoBak = false;
             public static bool AllowLocalizedSource = false;
             public static bool AllowUnderscore = false;
+            public static bool PatchAllFunctions { get; set; } = false;
             public static bool PatchAssignments { get; set; } = false;
         }
         private static readonly string[] NotAllowedPath = new[] { 
@@ -56,6 +57,7 @@ namespace Solicen.CLI
                 new Argument("--table", null, "Extract strings from Data/String Table assets.", () => Config.AllowTable = true),
                 new Argument("--localized", "-l", "Extract fallback localization strings (LocalizedSource). [RISKY]", () => Config.AllowLocalizedSource = true),
                 new Argument("--underscore", "-u", "Allow extracting strings that contain the '_' character.", () => Config.AllowUnderscore = true),
+                new Argument("--patch-all-functions", null, "Iterate the bytecode-replacement pipeline over every UFunction with a ScriptBytecode (not just ExecuteUbergraph_*). Needed for widget event handlers and other functions that hold their EX_StringConst outside the ubergraph.", () => Config.PatchAllFunctions = true),
                 new Argument("--patch-assignments", null, "Also replace EX_StringConst inside an AssignmentExpression in the ubergraph (off by default; opt-in for game text hardcoded via 'Set Text' / 'Print String' Blueprint nodes).", () => Config.PatchAssignments = true),
                 new Argument("--debug", "-d", "Enables debug mode with additional information output.",() => Config.DebugMode = true),
                 new Argument("--help", "-h", "Show this help message.", () => Argumentor.ShowHelp(arguments)),

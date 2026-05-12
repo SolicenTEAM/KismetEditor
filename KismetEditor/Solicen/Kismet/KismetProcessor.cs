@@ -10,6 +10,7 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using UAssetAPI;
+using UAssetAPI.ExportTypes;
 using UAssetAPI.Kismet;
 using UAssetAPI.Kismet.Bytecode;
 using UAssetAPI.Kismet.Bytecode.Expressions;
@@ -84,6 +85,112 @@ namespace Solicen
                     ModifiedCount += replaced;
                 }
             }
+        }
+
+        /// <summary>
+        /// Like <see cref="ReplaceAllInUbergraph"/> but iterates the replacement pipeline over
+        /// every UFunction with a ScriptBytecode (not just ExecuteUbergraph_*). Required for
+        /// EX_StringConst literals living in widget event handlers and similar functions that
+        /// the ubergraph-only pipeline ignores.
+        /// </summary>
+        public static void ReplaceAllInAllFunctions(Dictionary<string, string> replacement, ref UAsset _Asset)
+        {
+            Asset = _Asset;
+            var assetJsonObject = JObject.Parse(Asset.SerializeJson());
+            var tempUsmap = Asset.Mappings != null ? Asset.Mappings : new Usmap();
+
+            foreach (var entry in replacement)
+            {
+                string from = entry.Key;
+                string to = entry.Value;
+                bool anyThisRound = true;
+                while (anyThisRound)
+                {
+                    anyThisRound = false;
+                    // Re-fetch each iteration: Asset is re-deserialized after each successful
+                    // replace, invalidating the cached KismetExpression[] arrays.
+                    var allFns = KismetExtension.GetAllScriptBytecode(assetJsonObject, Asset);
+                    foreach (var fn in allFns)
+                    {
+                        if (ReplaceSingleInFunction(assetJsonObject, fn.name, fn.jsonBytecode, fn.exprBytecode, from, to))
+                        {
+                            anyThisRound = true;
+                            break; // Restart to re-fetch — Asset has been re-deserialized.
+                        }
+                    }
+                }
+            }
+
+            _Asset = UAsset.DeserializeJson(assetJsonObject.ToString());
+            if (tempUsmap.FilePath != null)
+            {
+                _Asset.Mappings = tempUsmap;
+            }
+        }
+
+        private static bool ReplaceSingleInFunction(JObject assetJsonObject, string functionName, JArray liveBytecode, KismetExpression[] exprBytecode, string replaceFrom, string replaceTo)
+        {
+            if (liveBytecode == null)
+            {
+                return false;
+            }
+
+            bool replaced = FindAndReplaceRecursively(liveBytecode, liveBytecode, exprBytecode, replaceFrom, replaceTo);
+            if (!replaced)
+            {
+                return false;
+            }
+
+            // Re-deserialize the asset so the new bytecode array reflects the placeholder + jump
+            // and the appended modified statement + return jump.
+            Asset = UAsset.DeserializeJson(assetJsonObject.ToString());
+
+            var newFn = Asset.Exports.OfType<StructExport>()
+                .FirstOrDefault(e => e.ObjectName.ToString() == functionName);
+            if (newFn == null || newFn.ScriptBytecode == null)
+            {
+                Console.WriteLine($"[WRN] Function '{functionName}' not found in asset after re-deserialize; skipping offset recalculation.");
+                return true;
+            }
+
+            // Compute MAGIC_TES / MAGIC_FES targets via KismetExpression.Visit(), which mirrors
+            // ExpressionSerializer.WriteExpression byte-for-byte and reports the offsets that
+            // StructExport.Write actually emits.
+            int idxTes = -1;
+            int idxFes = -1;
+            uint[] topLevelOffsets = new uint[newFn.ScriptBytecode.Length];
+            uint runningOffset = 0;
+            for (int i = 0; i < newFn.ScriptBytecode.Length; i++)
+            {
+                topLevelOffsets[i] = runningOffset;
+                var ex = newFn.ScriptBytecode[i];
+                if (ex is EX_Jump jx)
+                {
+                    if (jx.CodeOffset == MAGIC_TES && idxTes < 0)
+                    {
+                        idxTes = i;
+                    }
+                    else if (jx.CodeOffset == MAGIC_FES && idxFes < 0)
+                    {
+                        idxFes = i;
+                    }
+                }
+                uint after = runningOffset;
+                ex.Visit(Asset, ref after, (_, _) => { });
+                runningOffset = after;
+            }
+
+            int newToEnd = idxTes >= 0 && idxTes + 2 < topLevelOffsets.Length ? (int)topLevelOffsets[idxTes + 2] : 0;
+            int newFromEnd = idxFes >= 1 ? (int)topLevelOffsets[idxFes - 1] : 0;
+
+            if (newToEnd <= 0 || newFromEnd <= 0)
+            {
+                Console.WriteLine($"[WRN] Offsets could not be calculated for '{functionName}' (ToEnd: {newToEnd}, FromEnd: {newFromEnd}). The process may be unstable.");
+            }
+
+            ReplaceMagicNumber(liveBytecode, MAGIC_TES, newFromEnd);
+            ReplaceMagicNumber(liveBytecode, MAGIC_FES, newToEnd);
+            return true;
         }
 
         public static void ReplaceAllInUbergraph(Dictionary<string, string> replacement, ref UAsset _Asset)

@@ -49,6 +49,10 @@ namespace Solicen.Kismet
             if (expAsset == null) return 0; // Если ничего не найдено, отправляем 0 как ошибку.
             #endregion
 
+            // SerializeExpression resolves names through KismetSerializer.asset (a static).
+            // Reset it for the current asset, otherwise GetFullName throws NullReferenceException
+            // when iterating UFunctions other than the one most recently passed through GetUbergraphJson.
+            KismetSerializer.asset = asset;
             KismetSerializer.SerializeExpression(expAsset, ref totalSize, true);
             if (DebugOutput)
             {
