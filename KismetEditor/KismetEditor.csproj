@@ -8,8 +8,8 @@
     <Description>Kismet extractor and string replacer.</Description>
     <PackageProjectUrl></PackageProjectUrl>
     <RepositoryUrl>https://github.com/SolicenTEAM/KismetEditor</RepositoryUrl>
-    <AssemblyVersion>1.0.5.1</AssemblyVersion>
-    <FileVersion>1.0.5.1</FileVersion>
+    <AssemblyVersion>1.0.5.2</AssemblyVersion>
+    <FileVersion>1.0.5.2</FileVersion>
     <Version>1.0.5.1</Version>
     <PublishAot>False</PublishAot>
     <RootNamespace>Solicen</RootNamespace>
