@@ -40,8 +40,8 @@ Made with ❤️ for **all** translators and translation developers.
   | `--table` | Extract strings from Data/String Table assets.
   | `--localized` `-l` | Extract fallback localization strings (LocalizedSource) [RISKY]
   | `--underscore` `-u` | Allow extracting strings that contain the '_' character.
-  | `--patch-all-functions` | Iterate the bytecode-replacement pipeline over every UFunction with a ScriptBytecode (not just ExecuteUbergraph_*). Needed for widget event handlers and other functions that hold their (EX_StringConst) outside the ubergraph.
-  | `--patch-assignments` | Also replace (EX_StringConst) inside an AssignmentExpression in the ubergraph (off by default to avoid touching technical paths/keys; opt-in for game text hardcoded via 'Set Text' / 'Print String' Blueprint nodes).
+  | `--patch-all-functions` `-paf` | Iterate the bytecode-replacement pipeline over every UFunction with a ScriptBytecode (not just ExecuteUbergraph_*). Needed for widget event handlers and other functions that hold their (EX_StringConst) outside the ubergraph.
+  | `--patch-assignments` `-pa` | Also replace (EX_StringConst) inside an AssignmentExpression in the ubergraph (off by default to avoid touching technical paths/keys; opt-in for game text hardcoded via 'Set Text' / 'Print String' Blueprint nodes).
   | `--table:only:key` | If key/name matches then include only this value to output (e.g., --table:only:key=ENG)
   | `--pack:folder` `-p:f` | Translate and pack assets into auto prepared folder (e.g., "ManicMiners_RUS")
   | `--version` `-v` | Set the engine version for correct processing (e.g., -v=5.1)
