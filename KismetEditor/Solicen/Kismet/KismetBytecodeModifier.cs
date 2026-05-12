@@ -98,7 +98,7 @@ namespace Solicen.Kismet
             if (PackIntoFolder)
             {
                 var fileName = Path.GetFileName(path);
-                var virtualPath = Asset.FolderName != null ? Asset.FolderName.Value.Replace("/","\\"): "";
+                var virtualPath = Asset.FolderName != null ? Asset.FolderName.Value.Replace("/Game/", "/Game/Content/").Replace("/","\\"): "";
                 if (virtualPath == "")
                 {
                     // Если не найден виртуальный путь в ассетах (отсутствуют mappings)
