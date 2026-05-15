@@ -135,7 +135,8 @@ namespace Solicen
                 return false;
             }
 
-            bool replaced = FindAndReplaceRecursively(liveBytecode, liveBytecode, exprBytecode, replaceFrom, replaceTo);
+            var displacement = new DisplacementInfo();
+            bool replaced = FindAndReplaceRecursively(liveBytecode, liveBytecode, exprBytecode, replaceFrom, replaceTo, displacement);
             if (!replaced)
             {
                 return false;
@@ -190,6 +191,9 @@ namespace Solicen
 
             ReplaceMagicNumber(liveBytecode, MAGIC_TES, newFromEnd);
             ReplaceMagicNumber(liveBytecode, MAGIC_FES, newToEnd);
+
+            ShiftDisplacedStatementInternalOffsets(liveBytecode, newFn.ScriptBytecode, topLevelOffsets, idxTes, displacement);
+
             return true;
         }
 
@@ -236,7 +240,8 @@ namespace Solicen
             }
 
             // Шаг 2: Рекурсивно ищем и сразу заменяем первое найденное вхождение
-            bool replaced = FindAndReplaceRecursively(liveUbergraph, liveUbergraph, bytecode, replaceFrom, replaceTo);
+            var displacement = new DisplacementInfo();
+            bool replaced = FindAndReplaceRecursively(liveUbergraph, liveUbergraph, bytecode, replaceFrom, replaceTo, displacement);
             if (replaced)
             {
                 // Re-deserialize so the new ScriptBytecode reflects the placeholder + jump
@@ -285,6 +290,8 @@ namespace Solicen
                 ReplaceMagicNumber(liveUbergraph, MAGIC_TES, newFromEnd);
                 ReplaceMagicNumber(liveUbergraph, MAGIC_FES, newToEnd);
 
+                ShiftDisplacedStatementInternalOffsets(liveUbergraph, newBytecode, topLevelOffsets, idxTes, displacement);
+
                 return true; // Замена была успешной
             }
 
@@ -312,7 +319,7 @@ namespace Solicen
         }
 
 
-        private static bool FindAndReplaceRecursively(JToken token, JArray scriptBytecodeArray, KismetExpression[] ubergraph, string replaceFrom, string replaceTo)
+        private static bool FindAndReplaceRecursively(JToken token, JArray scriptBytecodeArray, KismetExpression[] ubergraph, string replaceFrom, string replaceTo, DisplacementInfo displacement)
         {
             if (token is JObject obj)
             {
@@ -352,7 +359,36 @@ namespace Solicen
                         int originalIndex = scriptBytecodeArray.IndexOf(statement);
                         if (originalIndex == -1) return false; // Не смогли найти индекс, что-то пошло не так
 
-                        scriptBytecodeArray.RemoveAt(originalIndex);       
+                        // Capture position + size of the string we are about to replace, relative to the
+                        // start of the typed statement. Used later by ShiftDisplacedStatementInternalOffsets
+                        // to apply both the global displacement shift AND the in-statement size shift.
+                        // Walks the TYPED statement pre-modification.
+                        if (originalIndex >= 0 && originalIndex < ubergraph.Length)
+                        {
+                            uint w = 0;
+                            var localDisplacement = displacement;
+                            ubergraph[originalIndex].Visit(Asset, ref w, (e, off) =>
+                            {
+                                if (localDisplacement.RelPos != uint.MaxValue)
+                                {
+                                    return;
+                                }
+                                if (e is EX_StringConst sc && sc.Value == replaceFrom)
+                                {
+                                    localDisplacement.RelPos = off;
+                                    localDisplacement.OldSize = 1 + (sc.Value?.Length ?? 0) + 1;
+                                }
+                                else if (e is EX_UnicodeStringConst usc && usc.Value == replaceFrom)
+                                {
+                                    localDisplacement.RelPos = off;
+                                    localDisplacement.OldSize = 1 + 2 * ((usc.Value?.Length ?? 0) + 1);
+                                }
+                            });
+                            // Modification below always swaps to EX_UnicodeStringConst.
+                            displacement.NewSize = 1 + 2 * ((replaceTo?.Length ?? 0) + 1);
+                        }
+
+                        scriptBytecodeArray.RemoveAt(originalIndex);
                         var size = InstructionSearchSize.GetSize(Asset, statement, ubergraph);
                         /*
                         Console.WriteLine($"[INF] Step 1: Calculate the size of all instructions.");
@@ -393,17 +429,153 @@ namespace Solicen
 
                 foreach (var property in obj.Properties())
                 {
-                    if (FindAndReplaceRecursively(property.Value, scriptBytecodeArray, ubergraph, replaceFrom, replaceTo)) return true;
+                    if (FindAndReplaceRecursively(property.Value, scriptBytecodeArray, ubergraph, replaceFrom, replaceTo, displacement))
+                    {
+                        return true;
+                    }
                 }
             }
             else if (token is JArray array)
             {
                 foreach (var item in array)
                 {
-                    if (FindAndReplaceRecursively(item, scriptBytecodeArray, ubergraph, replaceFrom, replaceTo)) return true;
+                    if (FindAndReplaceRecursively(item, scriptBytecodeArray, ubergraph, replaceFrom, replaceTo, displacement))
+                    {
+                        return true;
+                    }
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Names of opcode fields that hold absolute byte positions inside the same bytecode buffer
+        /// (and therefore become stale when a statement is physically displaced).
+        /// </summary>
+        private static readonly string[] AbsoluteOffsetFieldNames =
+        {
+            "CodeOffset",     // EX_Jump, EX_JumpIfNot, EX_Skip
+            "EndGotoOffset",  // EX_SwitchValue
+            "NextOffset",     // FKismetSwitchCase (inside EX_SwitchValue.Cases)
+            "PushingAddress", // EX_PushExecutionFlow
+        };
+
+        /// <summary>
+        /// Carries the string-position and size info captured during FindAndReplaceRecursively
+        /// to ShiftDisplacedStatementInternalOffsets. Allows the shifter to distinguish
+        /// "before the replaced string" (shift by relocDelta only) from "after the replaced
+        /// string" (shift by relocDelta + internalDelta) when computing the final shift for
+        /// each internal absolute offset.
+        ///
+        /// Passed explicitly through the call chain rather than via static state, so that
+        /// nested invocations of FindAndReplaceRecursively (recursive walks, nested
+        /// replacement attempts) don't accidentally clobber each other's data.
+        /// </summary>
+        private class DisplacementInfo
+        {
+            public uint RelPos = uint.MaxValue;
+            public int OldSize = 0;
+            public int NewSize = 0;
+        }
+
+        /// <summary>
+        /// After FindAndReplaceRecursively has displaced the modified statement to the end of the
+        /// bytecode (and inserted EX_Jump+placeholder at its original position), the statement's
+        /// internal absolute offsets (e.g. EX_SwitchValue.EndGotoOffset, EX_Jump.CodeOffset inside
+        /// the statement) still point at byte positions from the OLD layout. For offsets whose
+        /// target falls inside the statement's original byte range, those bytes have moved by
+        /// relocDelta = newPos - oldPos. This walks the displaced statement's JSON subtree and
+        /// adds relocDelta to any absolute-offset field whose value is in the original range.
+        ///
+        /// Without this fix, default branches of EX_SwitchValue and similar in-statement jumps
+        /// land mid-instruction in the patched bytecode, causing "undefined opcode" / "infinite
+        /// script recursion" crashes at runtime on the affected branches.
+        /// </summary>
+        private static void ShiftDisplacedStatementInternalOffsets(JArray liveBytecode, KismetExpression[] newBytecode, uint[] topLevelOffsets, int idxTes, DisplacementInfo displacement)
+        {
+            if (idxTes < 0 || idxTes + 2 > topLevelOffsets.Length - 1)
+            {
+                return;
+            }
+            if (liveBytecode == null || liveBytecode.Count < 2)
+            {
+                return;
+            }
+            if (newBytecode == null || newBytecode.Length < 2)
+            {
+                return;
+            }
+
+            int dispJsonIdx = liveBytecode.Count - 2;     // displaced statement is just before the return jump
+            int dispExprIdx = newBytecode.Length - 2;
+
+            if (dispJsonIdx <= idxTes + 1 || dispExprIdx <= idxTes + 1)
+            {
+                return;
+            }
+            if (dispJsonIdx >= liveBytecode.Count)
+            {
+                return;
+            }
+            if (!(liveBytecode[dispJsonIdx] is JObject dispJson))
+            {
+                return;
+            }
+
+            uint oldStmtPos = topLevelOffsets[idxTes];       // position of the placeholder == original position of statement
+            uint oldStmtEnd = topLevelOffsets[idxTes + 2];   // start of the next original statement
+            uint newStmtPos = topLevelOffsets[dispExprIdx];  // position of the displaced statement at the end of bytecode
+            long relocDelta = (long)newStmtPos - (long)oldStmtPos;
+
+            if (relocDelta == 0 && displacement.RelPos == uint.MaxValue)
+            {
+                return;
+            }
+
+            // Compute the absolute byte range of the OLD string (the one we replaced) inside the
+            // OLD bytecode. Internal jump targets that point AFTER this range need an additional
+            // shift of (newStringSize - oldStringSize) because everything after the string was
+            // physically moved within the (now displaced) statement by that delta.
+            int internalDelta = displacement.NewSize - displacement.OldSize;
+            long absOldStringEnd = (displacement.RelPos == uint.MaxValue)
+                ? long.MaxValue
+                : (long)oldStmtPos + displacement.RelPos + displacement.OldSize;
+
+            ShiftInternalOffsetsRecursive(dispJson, oldStmtPos, oldStmtEnd, relocDelta,
+                absOldStringEnd, internalDelta);
+        }
+
+        private static void ShiftInternalOffsetsRecursive(JToken token, uint oldStart, uint oldEnd, long relocDelta,
+            long absStringEnd, int internalDelta)
+        {
+            if (token is JObject obj)
+            {
+                foreach (var fieldName in AbsoluteOffsetFieldNames)
+                {
+                    if (obj.TryGetValue(fieldName, out JToken offsetToken) && offsetToken.Type == JTokenType.Integer)
+                    {
+                        long target = offsetToken.Value<long>();
+                        if (target >= oldStart && target < oldEnd)
+                        {
+                            long extra = (target >= absStringEnd) ? internalDelta : 0L;
+                            obj[fieldName] = target + relocDelta + extra;
+                        }
+                    }
+                }
+                foreach (var prop in obj.Properties())
+                {
+                    ShiftInternalOffsetsRecursive(prop.Value, oldStart, oldEnd, relocDelta,
+                        absStringEnd, internalDelta);
+                }
+            }
+            else if (token is JArray array)
+            {
+                foreach (var item in array)
+                {
+                    ShiftInternalOffsetsRecursive(item, oldStart, oldEnd, relocDelta,
+                        absStringEnd, internalDelta);
+                }
+            }
         }
 
         /// <summary>
