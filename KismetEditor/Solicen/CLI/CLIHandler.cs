@@ -24,8 +24,9 @@ namespace Solicen.CLI
             public static string RunCommand = string.Empty;
             public static UAssetAPI.UnrealTypes.EngineVersion Version = UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_18;
             public static bool NoBak = false;
+            public static bool AllowTextProperty = false;
             public static bool AllowLocalizedSource = false;
-            public static bool AllowUnderscore = false;
+            public static bool AllowUnderscore = true;
             public static bool PatchAllFunctions { get; set; } = false;
             public static bool PatchAssignments { get; set; } = false;
         }
@@ -39,38 +40,40 @@ namespace Solicen.CLI
         {
             arguments = new List<Argument>
             {
-                // Флаги (аргументы без значений)
                 // [WIP] new Argument("--virtual", "-v", "Activate virtual provider for (.pak|.ucas).", () => Config.Virtual = true),
-                new Argument("--all-function", "-all:fnc", "Parses all UFunction with ScriptBytecode and extracts all strings of type EX_StringConst.", () => Config.AllFunctionStringConst = true),
-                new Argument("--api:model", "-a:model", "Set model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)", (model) => Translator.UberTranslator.OpenRouterModel  = model),
-                new Argument("--api", "-a", "Set apikey for OpenRouter.", (key) => Translator.UberTranslator.OpenRouterApiKey = key),
-                new Argument("--include:name", "-i:name", "Include namespace::value.", () => MapParser.IncludeNameSpace = true),
-                new Argument("--map", "-m", "Add specified .usmap nearby .exe as mappings for processing (e.g., --map='Gori_umap.usmap').", (map) => ProcessMappings(map)),
-                new Argument("--nobak", null, "Disables the creation of .bak backup files.", () => Config.NoBak = true),
-                new Argument("--translate", null, "Automatically translate strings using an online translator.", () => Config.Translate = true),
-                new Argument("--all", null, "Extract all string types (includes StringTable and LocalizedSource).", () => { Config.AllowLocalizedSource = true; Config.AllowTable = true; Config.AllFunctionStringConst = true; }),
-                new Argument("--table", null, "Extract strings from Data/String Table assets.", () => Config.AllowTable = true),
-                new Argument("--localized", "-l", "Extract fallback localization strings (LocalizedSource). [RISKY]", () => Config.AllowLocalizedSource = true),
-                new Argument("--underscore", "-u", "Allow extracting strings that contain the '_' character.", () => Config.AllowUnderscore = true),
-                new Argument("--patch-all-functions", "-paf", "Iterate the bytecode-replacement pipeline over every UFunction with a ScriptBytecode (not just ExecuteUbergraph_*). Needed for widget event handlers and other functions that hold their EX_StringConst outside the ubergraph.", () => Config.PatchAllFunctions = true),
-                new Argument("--patch-assignments", "-pa", "Also replace EX_StringConst inside an AssignmentExpression in the ubergraph (off by default; opt-in for game text hardcoded via 'Set Text' / 'Print String' Blueprint nodes).", () => Config.PatchAssignments = true),
-                new Argument("--debug", "-d", "Enables debug mode with additional information output.",() => Config.DebugMode = true),
-                new Argument("--help", "-h", "Show this help message.", () => Argumentor.ShowHelp(arguments)),
-                new Argument("--uexp", "-exp", "Include uexp files to process.", () => Config.IncludeUexpFiles = true),
-                new Argument("--process:all", "-p:a", "Process all directories.", () => Config.AllDirectories = true),
+                // By default, StringConst is enabled only in Ubergraph and occurrences of StrProperty. You can extend the extraction with the arguments below.
+                new Argument("--StringConst", "-sc", "Parses all UFunction with ScriptBytecode and extracts all strings of type EX_StringConst.", () => Config.AllFunctionStringConst = true),
+                new Argument("--TextProperty", "-t", "Allow to extract string with TextProperty type.", () => Config.AllowTextProperty = true),
+                new Argument("--LocalizedSource", "-l", "Extract fallback localization strings (LocalizedSource).", () => Config.AllowLocalizedSource = true),
+                new Argument("--Table", "-t", "Extract strings from Data/String Table assets.", () => Config.AllowTable = true),
+                new Argument("--AllType", "-all", "Extract all string types (includes Table and LocalizedSource and TextProperty).", 
+                () => { Config.AllowLocalizedSource = true; Config.AllowTable = true; Config.AllowTextProperty = true; Config.AllFunctionStringConst = true; }),
+      
+                new Argument("--No-underscore", "-n:un", "Skips strings that contain the '_' character.", () => Config.AllowUnderscore = false),
+                new Argument("--Map", "-m", "Add specified .usmap nearby .exe as mappings for processing (e.g., -m='Gori_umap.usmap').", (map) => ProcessMappings(map)),
+                new Argument("--Map-nearby", "-u:m", "Uses the usmap file if it finds it nearby.", () => UseAnyMappingNearby()),
+                new Argument("--NoBak", "-bak", "Disables the creation of .bak backup files.", () => Config.NoBak = true),
+                new Argument("--Translate", null, "Automatically translate strings using an online translator.", () => Config.Translate = true),
+                new Argument("--Patch-all-functions", "-paf", "Iterate the bytecode-replacement pipeline over every UFunction with a ScriptBytecode (not just ExecuteUbergraph_*). Needed for widget event handlers and other functions that hold their EX_StringConst outside the ubergraph.", () => Config.PatchAllFunctions = true),
+                new Argument("--Patch-assignments", "-pa", "Also replace EX_StringConst inside an AssignmentExpression in the ubergraph (off by default; opt-in for game text hardcoded via 'Set Text' / 'Print String' Blueprint nodes).", () => Config.PatchAssignments = true),
+                new Argument("--Pack-folder", "-p:f", "Translate and pack assets into auto prepared folder (e.g., 'ManicMiners_RUS')", (folder) => { BytecodeModifier.PackIntoFolder = true; BytecodeModifier.PackFolder = folder; }),
+                new Argument("--Version", "-v", "Set the engine version for correct processing (e.g., -v=5.1).", ProcessVersion),
+                new Argument("--Run", "-r", "Execute a command in the terminal after completion (e.g., --run=[CommandArgs])", (cmd) => Config.RunCommand = cmd),
 
-                //
-                new Argument("--use:map", "-u:m", "Uses the usmap file if it finds it nearby.", () => UseAnyMappingNearby()),
+                new Argument("--All-directories", "-all:dir", "Process all directories.", () => Config.AllDirectories = true),
+                new Argument("--Include-name", "-i:name", "Include namespace::value.", () => MapParser.IncludeNameSpace = true),
+                new Argument("--Uexp", "-exp", "Include uexp files to process.", () => Config.IncludeUexpFiles = true),
+                new Argument("--Table-only-key", "-t:o:k", "If key/name matches then include only this value to output (e.g., --Table-only-key=ENG).", (key) => MapParser.SearchNameSpace = key),
+                new Argument("--Debug", "-d", "Enables debug mode with additional information output.",() => Config.DebugMode = true),
 
-                // Аргументы со значениями
-                new Argument("--table:only:key", null, "If key/name matches then include only this value to output (e.g., --table:only:key=ENG).", (key) => MapParser.SearchNameSpace = key),
-                new Argument("--pack:folder", "-p:f", "Translate and pack assets into auto prepared folder (e.g., 'ManicMiners_RUS')", (folder) => { BytecodeModifier.PackIntoFolder = true; BytecodeModifier.PackFolder = folder; }),
-                new Argument("--version", "-v", "Set the engine version for correct processing (e.g., -v=5.1).", ProcessVersion),
-                new Argument("--lang:from", "-l:f", "Set the source language for translation (e.g., --lang:from=en).", (lang) => UberTranslator.LanguageFrom = lang),
-                new Argument("--lang:to", "-l:t", "Set the target language for translation (e.g., --lang:to=ru).", (lang) => UberTranslator.LanguageTo = lang),
-                new Argument("--endpoint", "-e", "Set the translation service endpoint (e.g., -e=yandex).", (endpoint) => UberTranslator.Endpoint = endpoint),
-                new Argument("--run", "-r", "Execute a command in the terminal after completion (e.g., --run=[CommandArgs])", (cmd) => Config.RunCommand = cmd)
-            };
+                new Argument("--Api-key", "-a", "Set apikey for OpenRouter.", (key) => Translator.UberTranslator.OpenRouterApiKey = key),
+                new Argument("--Api-model", "-a:m", "Set model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)", (model) => Translator.UberTranslator.OpenRouterModel  = model),
+                new Argument("--Language-source", "-l:s", "Set the source language for translation (e.g., -l:s=en).", (lang) => UberTranslator.LanguageFrom = lang),
+                new Argument("--Language-to", "-l:t", "Set the target language for translation (e.g., -l:t=ru).", (lang) => UberTranslator.LanguageTo = lang),
+                new Argument("--Endpoint", "-e", "Set the translation service endpoint (e.g., -e=yandex).", (endpoint) => UberTranslator.Endpoint = endpoint),
+
+                new Argument("--help", "-h", "Show this help message.", () => Argumentor.ShowHelp(arguments))
+            };          
         }
  
 
@@ -180,6 +183,8 @@ namespace Solicen.CLI
 
             // 2. Применяем конфигурацию к другим модулям
             BytecodeExtractor.AllowTableExtract = Config.AllowTable;
+            BytecodeExtractor.AllowTextProperty = Config.AllowTextProperty;
+            BytecodeExtractor.AllFunctionStringConst = Config.AllFunctionStringConst;
             BytecodeModifier.AllowCreateBak = !Config.NoBak;
             AssetLoader.Version = Config.Version;
 

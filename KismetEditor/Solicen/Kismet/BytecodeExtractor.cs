@@ -13,7 +13,10 @@ namespace Solicen.Kismet
 {
     public static class BytecodeExtractor
     {
+        public static bool AllowTextProperty = false;
         public static bool AllowTableExtract = false;
+        public static bool AllFunctionStringConst = false;
+
         public static UAsset Asset;
 
         public static void Virtual_ExtractALlAndWriteUberJSON(UAssetAPI.PakReader pak, bool allowUnderscore = false, bool allowLocalized = false, string uberName = "UberJSON")
@@ -127,7 +130,7 @@ namespace Solicen.Kismet
 
         public static LObject[] ExtractEachTextProperty()
         {
-            if (AllowTableExtract) // Так как это рискованная операция, относиться к --all
+            if (AllowTextProperty)
             {
                 var textProperty = MapParser.ExtractTextProperties(Asset);
                 if (textProperty != null && textProperty.Length > 0)
@@ -162,7 +165,7 @@ namespace Solicen.Kismet
         public static LObject[] ExtractFromUbergraph(string assetPath)
         {
 
-            if (CLIHandler.Config.AllFunctionStringConst)
+            if (AllFunctionStringConst)
             {
                 var kismets = MapParser.ExtractEachStringConst(Asset);
                 if (kismets != null && kismets.Length > 0) MapParser.OutputInformation("EX_StingConst", kismets);

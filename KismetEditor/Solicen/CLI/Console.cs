@@ -143,7 +143,7 @@ namespace Solicen.CLI
                     {
                         // Извлекаем имя цвета
                         string colorName = message.Substring(i + 1, closingBracketIndex - i - 1);
-                        if (Enum.TryParse(colorName, true, out ConsoleColor newColor))
+                        if (Enum.TryParse(colorName, true, out ConsoleColor newColor) && Enum.IsDefined(newColor))
                         {
                             // Если это валидный цвет, меняем его и перескакиваем через тег
                             System.Console.ForegroundColor = newColor;
