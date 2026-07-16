@@ -90,6 +90,24 @@ namespace Solicen.Kismet
             }
         }
 
+        public static LObject[] ExtractEachStringConst(UAsset asset)
+        {
+            HashSet<LObject> EX_StringConst = new HashSet<LObject>();
+
+            var JObj = JObject.Parse(asset.SerializeJson());
+            var allFnc = KismetExtension.GetAllScriptBytecode(JObj, asset);
+
+            foreach (var fnc in allFnc)
+            {
+                var kismets = CreateMap(fnc.jsonBytecode, null, true);
+                foreach (var value in kismets)
+                {
+                    EX_StringConst.Add(value);
+                }
+            }
+            return EX_StringConst.ToArray();
+        }
+
         public static LObject[] ParseUbergraph(JArray jArray)
         {
             HashSet<LObject> kismetValues = new HashSet<LObject>(CreateMap(jArray, null, true));
@@ -462,7 +480,7 @@ namespace Solicen.Kismet
             if (token is JObject obj)
             {
                 bool isStringConst = (obj.TryGetValue("$type", out var typeToken) && typeToken.ToString().Contains("StringConst")) ||
-                                     (obj.TryGetValue("Inst", out var instToken) && instToken.ToString().Contains("StringConst"));
+                                     (obj.TryGetValue("Inst",  out var instToken) && instToken.ToString().Contains("StringConst"));
 
                 var rootExpression = FindRootStatement(token) as JObject;
                 int statementIndex = rootExpression["StatementIndex"]?.Value<int>() ?? 0;

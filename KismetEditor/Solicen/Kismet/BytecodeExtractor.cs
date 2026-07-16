@@ -72,6 +72,15 @@ namespace Solicen.Kismet
                     }
                     uberJSONCollection.Add(uberJSON);
                 }
+
+                // --- Отладочный вывод и безопасный режим (без сохранения) ---
+                if (CLI.CLIHandler.Config.DebugMode)
+                {
+                    var _json = Asset.SerializeJson(Formatting.Indented);
+                    // Сохраняем итоговый JSON в файл для ручной проверки
+                    File.WriteAllText($"{Environment.CurrentDirectory}\\Ubergraph.json", _json);
+                    Solicen.CLI.Console.WriteLine($"[INF] The JSON is saved in: {Environment.CurrentDirectory}\\Ubergraph.json");
+                }
             }
 
             return uberJSONCollection.ToArray();
@@ -152,18 +161,24 @@ namespace Solicen.Kismet
 
         public static LObject[] ExtractFromUbergraph(string assetPath)
         {
-            var ubergraph = KismetExtension.GetUbergraphSerialized(Asset);
-            if (ubergraph != null && ubergraph.Count > 0)
+
+            if (CLIHandler.Config.AllFunctionStringConst)
             {
-                var kismets = MapParser.ParseUbergraph(ubergraph);
-                if (kismets != null && kismets.Length > 0) MapParser.OutputInformation("Ubergraph", kismets);
+                var kismets = MapParser.ExtractEachStringConst(Asset);
+                if (kismets != null && kismets.Length > 0) MapParser.OutputInformation("EX_StingConst", kismets);
                 return kismets;
             }
             else
             {
-                return Array.Empty<LObject>();
+                var ubergraph = KismetExtension.GetUbergraphSerialized(Asset);
+                if (ubergraph != null && ubergraph.Count > 0)
+                {
+                    var kismets = MapParser.ParseUbergraph(ubergraph);
+                    if (kismets != null && kismets.Length > 0) MapParser.OutputInformation("Ubergraph", kismets);
+                    return kismets;
+                }
             }
-
+            return Array.Empty<LObject>();
         }
 
         public static LObject[] ExtractValuesToLiteObject(string assetPath)

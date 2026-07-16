@@ -1,18 +1,11 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Solicen.JSON;
+﻿using Solicen.JSON;
 using Solicen.Kismet;
 using Solicen.Translator;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using UAssetAPI;
-using UAssetAPI.UnrealTypes;
-using static System.Net.WebRequestMethods;
 
 namespace Solicen.CLI
 {
@@ -20,6 +13,7 @@ namespace Solicen.CLI
     {
         public static class Config
         {
+            public static bool AllFunctionStringConst = false;
             public static bool AllDirectories = false;
             public static bool IncludeUexpFiles = false;
             public static bool Heuristics = false;
@@ -47,13 +41,14 @@ namespace Solicen.CLI
             {
                 // Флаги (аргументы без значений)
                 // [WIP] new Argument("--virtual", "-v", "Activate virtual provider for (.pak|.ucas).", () => Config.Virtual = true),
+                new Argument("--all-function", "-all:fnc", "Parses all UFunction with ScriptBytecode and extracts all strings of type EX_StringConst.", () => Config.AllFunctionStringConst = true),
                 new Argument("--api:model", "-a:model", "Set model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)", (model) => Translator.UberTranslator.OpenRouterModel  = model),
                 new Argument("--api", "-a", "Set apikey for OpenRouter.", (key) => Translator.UberTranslator.OpenRouterApiKey = key),
                 new Argument("--include:name", "-i:name", "Include namespace::value.", () => MapParser.IncludeNameSpace = true),
                 new Argument("--map", "-m", "Add specified .usmap nearby .exe as mappings for processing (e.g., --map='Gori_umap.usmap').", (map) => ProcessMappings(map)),
                 new Argument("--nobak", null, "Disables the creation of .bak backup files.", () => Config.NoBak = true),
                 new Argument("--translate", null, "Automatically translate strings using an online translator.", () => Config.Translate = true),
-                new Argument("--all", null, "Extract all string types (includes StringTable and LocalizedSource).", () => { Config.AllowLocalizedSource = true; Config.AllowTable = true; }),
+                new Argument("--all", null, "Extract all string types (includes StringTable and LocalizedSource).", () => { Config.AllowLocalizedSource = true; Config.AllowTable = true; Config.AllFunctionStringConst = true; }),
                 new Argument("--table", null, "Extract strings from Data/String Table assets.", () => Config.AllowTable = true),
                 new Argument("--localized", "-l", "Extract fallback localization strings (LocalizedSource). [RISKY]", () => Config.AllowLocalizedSource = true),
                 new Argument("--underscore", "-u", "Allow extracting strings that contain the '_' character.", () => Config.AllowUnderscore = true),
