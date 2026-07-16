@@ -34,7 +34,7 @@ Made with ❤️ for **all** translators and translation developers.
 
 > [!TIP]
 > If some `EX_StringConst` strings are missing, try the `--StringConst` argument. 
-> This will extract them from all ufunctions in the asset.
+> * This will extract them from all `UFunction` in the asset.
 
 ### Main arguments:
 | Argument | Short | Description |
