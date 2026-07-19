@@ -1,10 +1,6 @@
-﻿﻿using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UAssetAPI.Kismet.Bytecode;
 
 namespace Solicen.Kismet
 {
@@ -30,6 +26,19 @@ namespace Solicen.Kismet
             Offset = offset;
             InstructionSize = instructionSize;
             KeyValue = keyValue;
+        }
+    }
+
+    public static class LObjectHelper
+    {
+        /// <summary>
+        /// Makes the array unique based on unique values.
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        public static IEnumerable<LObject> ToUniqueValue(this IEnumerable<LObject> values)
+        {
+            return values.GroupBy(x => x.Value).Select(g => g.First()).ToImmutableArray();
         }
     }
 }

@@ -1,13 +1,10 @@
 ﻿using Newtonsoft.Json;
-using Solicen.CLI;
 using Solicen.JSON;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UAssetAPI;
-using UAssetAPI.FieldTypes;
-using UAssetAPI.Unversioned;
 
 namespace Solicen.Kismet
 {
@@ -201,7 +198,7 @@ namespace Solicen.Kismet
 
             //AllExtractedStr.AddRange(ReverseE.GetAllFText(assetPath));
             if (AllExtractedStr.Count > 0) System.Console.WriteLine();
-            return AllExtractedStr.ToArray();
+            return AllExtractedStr.ToUniqueValue().ToArray(); // Unique because we don't need any dublicate in output. 
         }
     }
 }
