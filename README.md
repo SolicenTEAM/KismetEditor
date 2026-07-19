@@ -39,32 +39,34 @@ Made with ❤️ for **all** translators and translation developers.
 ### Main arguments:
 | Argument | Short | Description |
 |----------|-------|-------------|
-| `--StringConst` | `-sc` | Parses all UFunction with ScriptBytecode and extracts all strings of type EX_StringConst.
-| `--TextProperty` | | Allow to extract string with TextProperty type.
-| `--LocalizedSource` | `-l` | Extract fallback localization strings (LocalizedSource).
-| `--Table` | `-t` | Extract strings from Data/String Table assets.
-| `--AllType`| `-all`| Extract all string types (includes StringTable and LocalizedSource and TextProperty)
-| `-No-underscore` | `-n:un` | Skips strings that contain the `_` character.
-| `--Include-name` | `-i:name` | Include name/key::value (e.g., "ENG::Gori")
-  | `--Map` | `-m` | Specified .usmap nearby .exe as mappings for processing (e.g., --map="Gori_umap.usmap")
-  | `--Map-nearby` | `-u:m` | Uses the usmap file if it finds it nearby.
-  | `--NoBak` | `-bak` | Disables the creation of .bak backup files.
-  | `--Patch-all-functions` | `-paf` | Iterate the bytecode-replacement pipeline over every UFunction with a ScriptBytecode (not just ExecuteUbergraph_*). Needed for widget event handlers and other functions that hold their (EX_StringConst) outside the ubergraph.
-  | `--Patch-assignments` | `-pa` | Also replace (EX_StringConst) inside an AssignmentExpression in the ubergraph (off by default to avoid touching technical paths/keys; opt-in for game text hardcoded via 'Set Text' / 'Print String' Blueprint nodes).
-  | `--Table-only-key` | `-t:o:k` | If key/name matches then include only this value to output (e.g., --table:only:key=ENG)
-  | `--Pack-folder` | `-p:f` | Translate and pack assets into auto prepared folder (e.g., "ManicMiners_RUS")
-  | `--Version` | `-v` | Set the engine version for correct processing (e.g., -v=5.1)
-  | `--Run` | `-r` | Execute a command in the terminal after completion (e.g., --run=[CommandArgs])
-| `--Debug` | `-d` | write additional files for debug: `Ubergraph.json`
-| `--help` |  | Show help information.
+| `--sconst` | `-sc` | Extract strings EX_StringConst from all UFunction with ScriptBytecode.
+| `--tprop` | `-tp` | Extract fallback localization strings with TextProperty type.
+| `--lsource` | `-ls` | Extract fallback localization strings with LocalizedSource.
+| `--dstable` | `-dst` | Extract fallback localization strings from Data/String Table assets.
+| `--alltypes`| `-all`| Extract strings from all possible types (includes Table and LocalizedSource and TextProperty).
+| `--no-filter` | `-nf` | Disables string filter function while processing.
+| `--no-backup` | `-nobak` | Disables the creation of .bak backup files.
+| `-no-underscore` | `-un` | Excludes strings that contain the '_' character.
+| `--all-directories` | `-alldir` | Disables filter with specifed directory names for analyze and asset processing.
+| `--namespace` | `-ns` | Include name/key::value (e.g., "ENG::Gori") in output JSON
+  | `--mapping` | `-map` | Specified .usmap nearby .exe as mappings for processing (e.g., -map="Gori_umap.usmap")
+  | `--mapping-auto` | `-ma` | Uses the usmap file if it finds it nearby.
+  | `--patch-all-functions` | `-paf` | Iterate the bytecode-replacement pipeline over every UFunction with a ScriptBytecode (not just ExecuteUbergraph_*). Needed for widget event handlers and other functions that hold their (EX_StringConst) outside the ubergraph.
+  | `--patch-assignments` | `-pa` | Also replace (EX_StringConst) inside an AssignmentExpression in the ubergraph (off by default to avoid touching technical paths/keys; opt-in for game text hardcoded via 'Set Text' / 'Print String' Blueprint nodes).
+  | `--only-key` | `-tok` | If key/name matches then include only this value to output (e.g., -tok=ENG)
+  | `--pack-folder` | `-pf` | Translate and pack assets into auto prepared folder (e.g., "ManicMiners_RUS")
+  | `--version` | `-v` | Set the engine version for correct processing (e.g., -v=5.1)
+  | `--run` | `-r` | Execute a command in the terminal after completion (e.g., --run=[CommandArgs])
+| `--debug` | `-d` | Write additional files for debug: `Ubergraph.json`
+| `--help` | `-h` | Show help information.
 ### Translator arguments:
 | Argument | Short | Description |
 |----------|-------|-------------|
-  | `--Endpoint` | `-e` | Translation service endpoint (e.g., -e=router (yandex, google, microsoft, router as OpenRouter))
-  |  `--Api-key`| `-a` | Api-key for OpenRouter (e.g., --api=sk-or-v1-321313.....)
-  | `--Api-model`| `-a:m` | Model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)
-  | `--Language-source` | `-l:s` | Source language for translation (e.g., --lang:from=en)
-  | `--Language-to` | `-l:t` | Target language for translation (e.g., --lang:to=ru)
+  | `--endpoint` | `-e` | Translation service endpoint (e.g., -e=router (yandex, google, microsoft, router as OpenRouter))
+  |  `--api-key`| `-api` | Key for OpenRouter api (e.g., -api=sk...)
+  | `--api-model`| `-model` | Model for OpenRouter (e.g, -Model=tngtech/deepseek-r1t2-chimera:free)
+  | `--source-lang` | `-sl` | Source language for translation (e.g., --sl=en)
+  | `--target-lang` | `-tl` | Target language for translation (e.g., --tl=ru)
 
 #### Real example of [CommandArgs] usage:
 ```

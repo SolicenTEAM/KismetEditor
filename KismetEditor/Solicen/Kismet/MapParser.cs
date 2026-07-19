@@ -29,6 +29,7 @@ namespace Solicen.Kismet
         public static bool AllowLocalizedSource = false;
         public static bool AllowUnderscore = false;
         public static bool IncludeNameSpace = false;
+        public static bool IgnoreStringFilter = false;
         internal static bool IsLocalizedSource(string name) => name == "LocalizedSource";
         internal static bool IsContainsUnderscore(string str) => AllowUnderscore ? false : str.Contains("_");
 
@@ -42,10 +43,10 @@ namespace Solicen.Kismet
         }
         public static bool IsNotAllowedString(string value)
         {
+            if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2) return true;
+            if (IgnoreStringFilter) return false;
             return (
-                string.IsNullOrWhiteSpace(value)
-                || value.Trim().Length < 2
-                || IsCodePart(value)
+                IsCodePart(value)
                 || IsContainsUnderscore(value)
                 || value == "None"
                 || int.TryParse(value, out _)

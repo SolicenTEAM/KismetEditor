@@ -39,33 +39,34 @@
 ### Основные аргументы:
 | Аргумент | Сокращение | Описание |
 |----------|-----------|----------|
-| `--StringConst` | `-sc` | Парсит все UFunction с ScriptBytecode и извлекает все строки типа EX_StringConst. |
-| `--TextProperty` | | Разрешить извлечение строк типа TextProperty. |
-| `--LocalizedSource` | `-l` | Извлечение резервных строк локализации (LocalizedSource). |
-| `--Table` | `-t` | Извлечение строк из Data/String Table ассетов. |
-| `--AllType` | `-all` | Извлечение всех типов строк (включая StringTable, LocalizedSource и TextProperty). |
-| `-No-underscore` | `-n:un` | Пропускает строки, содержащие символ `_`. |
-| `--Include-name` | `-i:name` | Включать имя/ключ::значение (например, "ENG::Gori"). |
-| `--Map` | `-m` | Указать .usmap рядом с .exe в качестве маппингов (например, --map="Gori_umap.usmap"). |
-| `--Map-nearby` | `-u:m` | Использовать .usmap файл, если он найден рядом. |
-| `--NoBak` | `-bak` | Отключает создание .bak резервных копий. |
-| `--Patch-all-functions` | `-paf` | Применяет пайплайн замены байткода ко всем UFunction с ScriptBytecode (не только ExecuteUbergraph_*). Нужно для обработчиков виджетов и других функций, хранящих EX_StringConst вне уберграфа. |
-| `--Patch-assignments` | `-pa` | Также заменять EX_StringConst внутри AssignmentExpression в уберграфе (выключено по умолчанию, чтобы не трогать технические пути/ключи; включайте для игрового текста, заданного через ноды 'Set Text' / 'Print String'). |
-| `--Table-only-key` | `-t:o:k` | Если ключ/имя совпадает, включать только это значение в вывод (например, --table:only:key=ENG). |
-| `--Pack-folder` | `-p:f` | Перевести и упаковать ассеты в автоматически подготовленную папку (например, "ManicMiners_RUS"). |
-| `--Version` | `-v` | Установить версию движка для корректной обработки (например, -v=5.1). |
-| `--Run` | `-r` | Выполнить команду в терминале после завершения (например, --run=[CommandArgs]). |
-| `--Debug` | `-d` | Записывать дополнительные файлы для отладки: `Ubergraph.json`. |
-| `--help` | | Показать справку. |
+| `--sconst` | `-sc` | Парсит все UFunction с ScriptBytecode и извлекает все строки типа EX_StringConst. |
+| `--tprop` | `-tp`| Разрешить извлечение строк типа TextProperty. |
+| `--lsource` | `-ls` | Извлечение резервных строк локализации (LocalizedSource). |
+| `--dstable` | `-dst` | Извлечение строк из Data/String Table ассетов. |
+| `--alltypes` | `-all` | Извлечение всех типов строк (включая StringTable, LocalizedSource и TextProperty). |
+| `--no-filter` | `-nf` | Полностью отключает фильтрацию строк.
+| `--no-backup` | `-nobak` | Отключает создание .bak резервных копий. |
+| `-no-underscore` | `-un` | Пропускает строки, содержащие символ `_`. |
+| `--namespace` | `-ns` | Включать имя/ключ::значение (например, "ENG::Gori"). |
+| `--mapping` | `-map` | Указать .usmap рядом с .exe в качестве маппингов (например, -map="Gori_umap.usmap"). |
+| `--mapping-auto` | `-ma` | Использовать .usmap файл, если он найден рядом. |
+| `--patch-all-functions` | `-paf` | Применяет пайплайн замены байткода ко всем UFunction с ScriptBytecode (не только ExecuteUbergraph_*). Нужно для обработчиков виджетов и других функций, хранящих EX_StringConst вне уберграфа. |
+| `--patch-assignments` | `-pa` | Также заменять EX_StringConst внутри AssignmentExpression в уберграфе (выключено по умолчанию, чтобы не трогать технические пути/ключи; включайте для игрового текста, заданного через ноды 'Set Text' / 'Print String'). |
+| `--only-key` | `-tok` | Если ключ/имя совпадает, включать только это значение в вывод (например, --table:only:key=ENG). |
+| `--pack-folder` | `-pf` | Перевести и упаковать ассеты в автоматически подготовленную папку (например, "ManicMiners_RUS"). |
+| `--version` | `-v` | Установить версию движка для корректной обработки (например, -v=5.1). |
+| `--run` | `-r` | Выполнить команду в терминале после завершения (например, --run=[CommandArgs]). |
+| `--debug` | `-d` | Записывать дополнительные файлы для отладки: `Ubergraph.json`. |
+| `--help` | `-h` | Показать справку. |
 
 ### Аргументы переводчика:
 | Аргумент | Сокращение | Описание |
 |----------|-----------|----------|
-| `--Endpoint` | `-e` | Эндпоинт сервиса перевода (например, -e=router (yandex, google, microsoft, router как OpenRouter)). |
-| `--Api-key` | `-a` | API-ключ для OpenRouter (например, --api=sk-or-v1-321313.....). |
-| `--Api-model` | `-a:m` | Модель для OpenRouter (например, -a:model=tngtech/deepseek-r1t2-chimera:free). |
-| `--Language-source` | `-l:s` | Исходный язык для перевода (например, --lang:from=en). |
-| `--Language-to` | `-l:t` | Целевой язык для перевода (например, --lang:to=ru). |
+| `--endpoint` | `-e` | Эндпоинт сервиса перевода (например, -e=router (yandex, google, microsoft, router как OpenRouter)). |
+| `--api-key` | `-api` | API-ключ для OpenRouter (например, --api=sk-or-v1-321313.....). |
+| `--api-model` | `-model` | Модель для OpenRouter (например, -a:model=tngtech/deepseek-r1t2-chimera:free). |
+| `--source-lang` | `-sl` | Исходный язык для перевода (например, --lang:from=en). |
+| `--target-lang` | `-tl` | Целевой язык для перевода (например, --lang:to=ru). |
 
 #### Реальный пример использования [CommandArgs]:
 ```
