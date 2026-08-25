@@ -19,11 +19,11 @@ namespace Solicen.Kismet
         public static void Virtual_ExtractALlAndWriteUberJSON(UAssetAPI.PakReader pak, bool allowUnderscore = false, bool allowLocalized = false, string uberName = "UberJSON")
         {
             var assets = pak.Files();
-            
+
         }
 
         private static string UberName = string.Empty;
-        public static void ExtractAndWriteUJson(string asset, string uberName = "UberJSON") 
+        public static void ExtractAndWriteUJson(string asset, string uberName = "UberJSON")
             => ExtractAndWriteUJson(new string[] { asset }, uberName);
         public static void ExtractAndWriteUJson(string[] assets, string uberName = "UberJSON")
         {
@@ -84,7 +84,7 @@ namespace Solicen.Kismet
             }
 
             return uberJSONCollection.ToArray();
-           
+
         }
 
         public static void ExtractAndWriteCSV(string assetPath, string FileName = "")
@@ -165,7 +165,7 @@ namespace Solicen.Kismet
             if (AllFunctionStringConst)
             {
                 var kismets = MapParser.ExtractEachStringConst(Asset);
-                if (kismets != null && kismets.Length > 0) MapParser.OutputInformation("EX_StingConst", kismets);
+                if (kismets != null && kismets.Length > 0) MapParser.OutputInformation("EX_StringConst", kismets);
                 return kismets;
             }
             else
@@ -198,7 +198,7 @@ namespace Solicen.Kismet
 
             //AllExtractedStr.AddRange(ReverseE.GetAllFText(assetPath));
             if (AllExtractedStr.Count > 0) System.Console.WriteLine();
-            return AllExtractedStr.ToUniqueValue().ToArray(); // Unique because we don't need any dublicate in output. 
+            return AllExtractedStr.ToUniqueValue().ToArray(); // Unique because we don't need any dublicate in output.
         }
     }
 }
