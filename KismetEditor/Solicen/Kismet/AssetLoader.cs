@@ -11,14 +11,11 @@ namespace Solicen.Kismet
 {
     public class AssetLoader
     {
-        public static UAssetAPI.UnrealTypes.EngineVersion Version = UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_AUTOMATIC_VERSION_PLUS_ONE;
+        public static EngineVersion Version = EngineVersion.VER_UE4_AUTOMATIC_VERSION_PLUS_ONE;
         public static string MappingsPath = string.Empty;
         public static string ExceptionMessage = string.Empty;
 
-        public static void SetVersion(EngineVersion version)
-        {
-            Version = version;
-        }
+        public static void SetVersion(EngineVersion version) => Version = version;
         public static UAsset LoadAsset(string asset)
         {
             if (MappingsPath != string.Empty)
@@ -47,7 +44,7 @@ namespace Solicen.Kismet
                 {
                     ExceptionMessage = ex.Message;
                     CLI.Console.WriteLine("[Red][ERR] [White]Failed to load asset.");
-                    System.Console.WriteLine($" - ");
+                    System.Console.WriteLine($" - {ex.Message}");
                 }
             }
             return null;

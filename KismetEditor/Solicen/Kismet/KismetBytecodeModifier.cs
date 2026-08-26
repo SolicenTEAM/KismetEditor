@@ -11,13 +11,12 @@ using UAssetAPI;
 using UAssetAPI.Unversioned;
 
 namespace Solicen.Kismet
-{
-    
+{   
     class BytecodeModifier
     {
         public static bool PackIntoFolder = false;
-        public static string PackFolder = "SolUber_PAK";
-        public static bool AllowCreateBak = true;
+        public static string PackFolder = "Uber_P";
+        public static bool CreateBak = true;
         public static UAsset Asset; static bool UseBak = true;
 
         private static Dictionary<string,string> RemoveAnyCode(Dictionary<string, string> replacement)
@@ -34,7 +33,7 @@ namespace Solicen.Kismet
             replacement = replacement.Where(x => x.Key != x.Value).ToDictionary();
             replacement = replacement.Select(x => (x.Key.Unescape(), x.Value.Unescape())).ToDictionary();
 
-            if (AllowCreateBak)
+            if (CreateBak)
             {
                 if (UseBak)
                 {
@@ -111,7 +110,7 @@ namespace Solicen.Kismet
             }
 
             #region Сохранить .bak файлы
-            if (AllowCreateBak)
+            if (CreateBak)
             {
                 if (!File.Exists(Path.ChangeExtension(path, ".bak")))
                 {

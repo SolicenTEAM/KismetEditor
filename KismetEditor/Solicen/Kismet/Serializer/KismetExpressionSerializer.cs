@@ -113,25 +113,9 @@ public class KismetExpressionSerializer
 
     private JToken SerializeProperty(object property, Type declaredType, Type ownerType, string memberName)
     {
-        // === NULL ===
+        // === NULL → null ===
         if (property == null)
         {
-            // Спец‑логика для FPackageIndex (Old, StringTableAsset, и т.п.)
-            if (declaredType == typeof(FPackageIndex))
-            {
-                // FScriptText.StringTableAsset → всегда null
-                if (ownerType != null &&
-                    ownerType.FullName == "UAssetAPI.Kismet.Bytecode.FScriptText" &&
-                    memberName == "StringTableAsset")
-                {
-                    return JValue.CreateNull();
-                }
-
-                // Все остальные FPackageIndex (например KismetPropertyPointer.Old) → 0
-                return new JValue(0);
-            }
-
-            // Остальные null → null
             return JValue.CreateNull();
         }
         // =======================
@@ -150,17 +134,11 @@ public class KismetExpressionSerializer
         if (property is System.Collections.IEnumerable enumerable && property is not string)
             return SerializeEnumerable(enumerable);
 
-        // FPackageIndex → число, но с учётом FScriptText.StringTableAsset
+        // FPackageIndex: null → null, иначе индекс
         if (property is FPackageIndex fPackageIndex)
         {
-            if (ownerType != null &&
-                ownerType.FullName == "UAssetAPI.Kismet.Bytecode.FScriptText" &&
-                memberName == "StringTableAsset")
-            {
-                if (fPackageIndex == null || fPackageIndex.IsNull())
-                    return JValue.CreateNull();
-            }
-
+            if (fPackageIndex.IsNull())
+                return JValue.CreateNull();
             return new JValue(fPackageIndex.Index);
         }
 
