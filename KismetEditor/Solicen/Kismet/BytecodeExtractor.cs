@@ -27,8 +27,54 @@ namespace Solicen.Kismet
             => ExtractAndWriteUJson(new string[] { asset }, uberName);
         public static void ExtractAndWriteUJson(string[] assets, string uberName = "UberJSON")
         {
-            UberName = assets.Any() ? Path.GetFileNameWithoutExtension(assets[0]) : uberName;
-            var JsonFilePath = $"{EnvironmentHelper.AssemblyDirectory}\\{UberName}.json";
+            // Уважаем явно переданное имя (для поддержки кастомного выходного имени вида 2DSide_Test.json)
+            // Если uberName задан и отличается от дефолта — используем его, иначе берем имя первого ассета
+            string effectiveName = uberName;
+            bool hasCustomName = !string.IsNullOrWhiteSpace(uberName) && !uberName.Equals("UberJSON", StringComparison.OrdinalIgnoreCase);
+            if (hasCustomName)
+            {
+                // Если передано имя с путем — извлечем имя файла, но также поддержим полный путь ниже
+                effectiveName = uberName;
+            }
+            else
+            {
+                effectiveName = assets.Any() ? Path.GetFileNameWithoutExtension(assets[0]) : uberName;
+            }
+
+            // Определяем итоговый путь: если в effectiveName есть директория — используем как полный путь
+            string JsonFilePath;
+            bool isFullPath = hasCustomName && (effectiveName.Contains("\\") || effectiveName.Contains("/") || Path.IsPathRooted(effectiveName));
+            if (isFullPath)
+            {
+                string customPath = effectiveName;
+                if (!customPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                    customPath = Path.ChangeExtension(customPath, ".json");
+
+                // Абсолютизируем относительно AssemblyDirectory, если путь относительный
+                string absolutePath;
+                if (Path.IsPathRooted(customPath))
+                    absolutePath = Path.GetFullPath(customPath);
+                else
+                    absolutePath = Path.GetFullPath(Path.Combine(EnvironmentHelper.AssemblyDirectory, customPath));
+
+                string customDir = null;
+                try { customDir = Path.GetDirectoryName(absolutePath); } catch { customDir = Path.GetDirectoryName(absolutePath); }
+                if (!string.IsNullOrWhiteSpace(customDir) && !Directory.Exists(customDir))
+                {
+                    try { Directory.CreateDirectory(customDir); } catch {}
+                }
+                JsonFilePath = absolutePath;
+                UberName = Path.GetFileNameWithoutExtension(JsonFilePath);
+            }
+            else
+            {
+                // Обычный случай: имя файла без пути — сохраняем рядом с exe
+                string fileName = Path.GetFileNameWithoutExtension(effectiveName);
+                if (string.IsNullOrWhiteSpace(fileName)) fileName = hasCustomName ? effectiveName : (assets.Any() ? Path.GetFileNameWithoutExtension(assets[0]) : "UberJSON");
+                UberName = fileName;
+                JsonFilePath = Path.Combine(EnvironmentHelper.AssemblyDirectory, $"{UberName}.json");
+                JsonFilePath = Path.GetFullPath(JsonFilePath);
+            }
             var uberJSONCollection = ExtractValuesFromAssets(assets);
 
             #region Сохранение UberJSON
@@ -60,7 +106,7 @@ namespace Solicen.Kismet
                 Asset = AssetLoader.LoadAsset(asset);
                 if (Asset == null || KismetExtension.GetExportCount(Asset) == 0)
                 {
-                    Asset = null;
+                    Asset = null; 
                 }
                 var allValues = ExtractValuesToLiteObject(asset);
                 if (allValues.Length > 0)

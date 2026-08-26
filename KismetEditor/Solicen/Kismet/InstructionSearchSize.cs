@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Linq;
 using UAssetAPI.Kismet;
@@ -6,61 +7,70 @@ using UAssetAPI.Kismet.Bytecode;
 
 namespace Solicen.Kismet
 {
-    /// <summary>
-    /// Отвечает за поиск размера инструкций Kismet в байтах на основе сравнения Expression и их JSON-представления.
-    /// </summary>
     internal static class InstructionSearchSize
     {
-        static bool DebugOutput = false;
-
-      
-        /// <summary>
-        /// Вычисляет размер инструкции Kismet в байтах.
-        /// </summary>
-        /// <param name="expression">JObject, представляющий инструкцию (поле Expression из уберграфа).</param>
-        /// <returns>Размер инструкции в байтах.</returns>
         public static int GetSize(UAssetAPI.UAsset asset, JObject expression, KismetExpression[] ubergraph)
         {
             if (expression == null) return 0;
             int totalSize = 0; KismetExpression expAsset = null;
-            var json = expression.ToString();
-            var serializer = new KismetExpressionSerializer(asset);
-
-            if (DebugOutput)
+            var expJson = expression.ToString();
+            if (expJson.Contains("$type"))
             {
-                var context = ubergraph.FirstOrDefault(x => serializer.SerializeExpression(x).ToString().Contains("Initializing world..."));
-                if (context != null)
-                {
-                    Console.WriteLine("[MY]-------------------------------------------");
-                    Console.WriteLine(serializer.SerializeExpression(context).ToString());
-                    Console.WriteLine("-----------------------------------------------");
-                    Console.WriteLine();
-                    Console.WriteLine("[JSON]-----------------------------------------");
-                    Console.WriteLine(json);
-                    Console.WriteLine("-----------------------------------------------");
-                }
+                expAsset = ubergraph.First(x =>
+                    JTokenEquals(
+                        JToken.Parse(asset.SerializeJsonObject(x, Formatting.None)),
+                        expression));
+            }
+            else
+            {
+                expAsset = ubergraph.First(x => x.ToString() == expJson);
             }
 
-            #region Нахождение KismetExpression идентичного JObject
-            if (expression.ToString().Contains("$type")) // Ассет был сериализован
-                expAsset = ubergraph.First(x => (serializer.SerializeExpression(x).ToString() == expression.ToString()));              
-            else // Ассет не был сериализован можем найти так
-                expAsset = ubergraph.First(x => x.ToString() == expression.ToString());
-            if (expAsset == null) return 0; // Если ничего не найдено, отправляем 0 как ошибку.
-            #endregion
-
-            // SerializeExpression resolves names through KismetSerializer.asset (a static).
-            // Reset it for the current asset, otherwise GetFullName throws NullReferenceException
-            // when iterating UFunctions other than the one most recently passed through GetUbergraphJson.
             KismetSerializer.asset = asset;
             KismetSerializer.SerializeExpression(expAsset, ref totalSize, true);
-            if (DebugOutput)
-            {
-                Console.WriteLine("-----------------------------------------------");
-                Console.WriteLine($"Size: [{totalSize}]");
-                Console.WriteLine("-----------------------------------------------\n");
-            }
             return totalSize;
+        }
+
+        private static bool JTokenEquals(JToken a, JToken b)
+        {
+            if (JToken.DeepEquals(a, b)) return true;
+
+            // FPackageIndex deserialization artifact: FPackageIndex(Index=0)
+            // should be null — treat null ↔ 0 as equal
+            if (IsNull(a) && IsZero(b)) return true;
+            if (IsNull(b) && IsZero(a)) return true;
+
+            if (a is JObject objA && b is JObject objB)
+            {
+                if (objA.Count != objB.Count) return false;
+                foreach (var prop in objA.Properties())
+                {
+                    var propB = objB.Property(prop.Name);
+                    if (propB == null) return false;
+                    if (!JTokenEquals(prop.Value, propB.Value)) return false;
+                }
+                return true;
+            }
+
+            if (a is JArray arrA && b is JArray arrB)
+            {
+                if (arrA.Count != arrB.Count) return false;
+                for (int i = 0; i < arrA.Count; i++)
+                {
+                    if (!JTokenEquals(arrA[i], arrB[i])) return false;
+                }
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsNull(JToken t) => t.Type == JTokenType.Null;
+        private static bool IsZero(JToken t)
+        {
+            if (t.Type == JTokenType.Integer) return (int)t == 0;
+            if (t.Type == JTokenType.Float) return (double)t == 0;
+            return false;
         }
     }
 }

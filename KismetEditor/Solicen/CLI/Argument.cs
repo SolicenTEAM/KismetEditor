@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Solicen.CLI
 {
@@ -11,37 +13,71 @@ namespace Solicen.CLI
         public Action ActionWithoutValue { get; }
         public Action<string> ActionWithValue { get; }
 
+        public string[] Aliases { get; }
+
         // Конструктор для флагов (без значения)
-        public Argument(string key, string shortKey, string description, Action action)
+        public Argument(string key, string shortKey, string description, Action action, params string[] aliases)
         {
             Key = key;
             ShortKey = shortKey;
             Description = description;
             HasValue = false;
             ActionWithoutValue = action;
+            Aliases = aliases ?? Array.Empty<string>();
         }
 
         // Конструктор для аргументов со значением
-        public Argument(string key, string shortKey, string description, Action<string> action)
+        public Argument(string key, string shortKey, string description, Action<string> action, params string[] aliases)
         {
             Key = key;
             ShortKey = shortKey;
             Description = description;
             HasValue = true;
             ActionWithValue = action;
+            Aliases = aliases ?? Array.Empty<string>();
         }
 
-        // Проверяет, соответствует ли строковый аргумент этому правилу
+        // Извлекает часть до '=' (сам ключ). Например: "--mapping=Gori" -> "--mapping"
+        public static string GetKeyPart(string arg)
+        {
+            if (string.IsNullOrEmpty(arg)) return string.Empty;
+            int eq = arg.IndexOf('=');
+            if (eq != -1) return arg.Substring(0, eq).Trim();
+            return arg.Trim();
+        }
+
+        // Извлекает часть после '=' если есть. Например: "--mapping=Gori" -> "Gori"
+        public static string GetValuePart(string arg)
+        {
+            if (string.IsNullOrEmpty(arg)) return null;
+            int eq = arg.IndexOf('=');
+            if (eq != -1) return arg.Substring(eq + 1);
+            return null;
+        }
+
+        // Проверяет, соответствует ли строковый аргумент этому правилу (строгое сравнение).
+        // Ключ сравнивается ТОЧНО, без StartsWith, чтобы избежать коллизий вида -m / -ma / -map.
         public bool Matches(string arg)
         {
-            // Проверяем полное совпадение для флагов (аргументов без значений)
-            if (!HasValue)
+            if (string.IsNullOrWhiteSpace(arg)) return false;
+            string keyPart = GetKeyPart(arg);
+            if (string.IsNullOrEmpty(keyPart)) return false;
+            if (Key.Equals(keyPart, StringComparison.OrdinalIgnoreCase)) return true;
+            if (!string.IsNullOrEmpty(ShortKey) && ShortKey.Equals(keyPart, StringComparison.OrdinalIgnoreCase)) return true;
+            if (Aliases != null)
             {
-                return Key.Equals(arg, StringComparison.OrdinalIgnoreCase) || (!string.IsNullOrEmpty(ShortKey) && ShortKey.Equals(arg, StringComparison.OrdinalIgnoreCase));
+                foreach (var alias in Aliases)
+                    if (!string.IsNullOrEmpty(alias) && alias.Equals(keyPart, StringComparison.OrdinalIgnoreCase))
+                        return true;
             }
-            // Проверяем, начинается ли аргумент с ключа для аргументов со значением
-            return arg.StartsWith(Key, StringComparison.OrdinalIgnoreCase) ||
-                   (!string.IsNullOrEmpty(ShortKey) && arg.StartsWith(ShortKey, StringComparison.OrdinalIgnoreCase));
+            return false;
+        }
+
+        public string GetDisplayKeys()
+        {
+            var keys = new List<string> { Key, ShortKey };
+            if (Aliases != null) keys.AddRange(Aliases.Where(a => !string.IsNullOrEmpty(a)));
+            return string.Join(", ", keys.Where(k => !string.IsNullOrEmpty(k)));
         }
     }
 }
