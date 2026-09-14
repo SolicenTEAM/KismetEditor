@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Solicen.UE4;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,40 +15,79 @@ namespace Solicen.Kismet
         public static EngineVersion Version = EngineVersion.VER_UE4_AUTOMATIC_VERSION_PLUS_ONE;
         public static string MappingsPath = string.Empty;
         public static string ExceptionMessage = string.Empty;
+        public static string AES = string.Empty;
 
         public static void SetVersion(EngineVersion version) => Version = version;
+
+        #region Virtual Provider Zone
+        public static bool IsVirtual => provider!=null? true: false;
+        private static UnrealArchiveReader provider = null;
+        public static string FullPakPath = string.Empty;
+
+        public static void CloseProvider()
+        {
+            provider.Close();
+            provider = null;
+        }
+        public static void SetProvider(UnrealArchiveReader _provider)
+        {
+            if (provider == null && provider != _provider)
+            {
+                provider = _provider;
+            } 
+        }
+        #endregion
+
         public static UAsset LoadAsset(string asset)
         {
-            if (MappingsPath != string.Empty)
+            if (provider!=null)
             {
                 try
                 {
-                    ExceptionMessage = string.Empty;
-                    return new UAsset(asset, Version, new Usmap(MappingsPath));
+                    return provider.FromGameFile(asset);
                 }
                 catch (Exception ex)
                 {
                     CLI.Console.WriteLine("[Red][ERR] [White]Failed to load asset.");
-                    ExceptionMessage = ex.Message;
                     System.Console.WriteLine($" - {ex.Message}");
                 }
 
+                return null;
             }
             else
             {
-                try
+                if (MappingsPath != string.Empty)
                 {
-                    ExceptionMessage = string.Empty;
-                    return new UAsset(asset, Version);
+                    try
+                    {
+                        ExceptionMessage = string.Empty;
+                        return new UAsset(asset, Version, new Usmap(MappingsPath));
+                    }
+                    catch (Exception ex)
+                    {
+                        CLI.Console.WriteLine("[Red][ERR] [White]Failed to load asset.");
+                        ExceptionMessage = ex.Message;
+                        System.Console.WriteLine($" - {ex.Message}");
+                    }
+
                 }
-                catch (Exception ex)
+                else
                 {
-                    ExceptionMessage = ex.Message;
-                    CLI.Console.WriteLine("[Red][ERR] [White]Failed to load asset.");
-                    System.Console.WriteLine($" - {ex.Message}");
+                    try
+                    {
+                        ExceptionMessage = string.Empty;
+                        return new UAsset(asset, Version);
+                    }
+                    catch (Exception ex)
+                    {
+                        ExceptionMessage = ex.Message;
+                        CLI.Console.WriteLine("[Red][ERR] [White]Failed to load asset.");
+                        System.Console.WriteLine($" - {ex.Message}");
+                    }
                 }
+                return null;
             }
-            return null;
+
         }
     }
 }

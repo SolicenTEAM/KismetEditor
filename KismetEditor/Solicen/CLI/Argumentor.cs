@@ -497,7 +497,7 @@ namespace Solicen.CLI
                         var ver = Solicen.CLI.CLIHandler.Config.Version;
                         // Если версия осталась дефолтной и value явно не совпадает с дефолтом — возможно парсинг не сработал
                         // Эвристика: value должен содержать цифры
-                        if (ver == UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_18 && !value.Contains("4.18") && !value.ToUpper().Contains("UE4_18"))
+                        if (ver == global::UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_18 && !value.Contains("4.18") && !value.ToUpper().Contains("UE4_18"))
                         {
                             // Check if parsing actually produced 0 / unknown
                             // Enum.TryParse for invalid will leave ver as 0 (VER_Unknown ~0?) — проверим
@@ -507,7 +507,7 @@ namespace Solicen.CLI
                                 // Попробуем повторно распарсить для проверки
                                 string testVer = value.Trim();
                                 if (testVer.Contains(".")) testVer = $"UE{testVer.Replace(".", "_")}";
-                                UAssetAPI.UnrealTypes.EngineVersion testEngine;
+                                global::UAssetAPI.UnrealTypes.EngineVersion testEngine;
                                 if (!Enum.TryParse($"VER_{testVer}", true, out testEngine) && !Enum.TryParse(testVer, true, out testEngine))
                                 {
                                     CLI.Console.WriteLine($"[Yellow][WARN] [White]Version '[Yellow]{value}[White]' could not be parsed. Using default [Cyan]{ver}[White]. Expected e.g. [Cyan]4.18[DarkGray], [Cyan]5.1[DarkGray], [Cyan]UE4_18[White].");

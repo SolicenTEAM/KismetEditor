@@ -9,7 +9,7 @@ namespace Solicen.Kismet
 {
     internal static class InstructionSearchSize
     {
-        public static int GetSize(UAssetAPI.UAsset asset, JObject expression, KismetExpression[] ubergraph)
+        public static int GetSize(global::UAssetAPI.UAsset asset, JObject expression, KismetExpression[] ubergraph)
         {
             if (expression == null) return 0;
             int totalSize = 0; KismetExpression expAsset = null;

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UAssetAPI;
+using UAssetAPI.UnrealTypes;
 
 namespace Solicen.Kismet
 {
@@ -15,12 +16,6 @@ namespace Solicen.Kismet
         public static bool AllFunctionStringConst = false;
 
         public static UAsset Asset;
-
-        public static void Virtual_ExtractALlAndWriteUberJSON(UAssetAPI.PakReader pak, bool allowUnderscore = false, bool allowLocalized = false, string uberName = "UberJSON")
-        {
-            var assets = pak.Files();
-
-        }
 
         private static string UberName = string.Empty;
         public static void ExtractAndWriteUJson(string asset, string uberName = "UberJSON")
@@ -76,7 +71,52 @@ namespace Solicen.Kismet
                 JsonFilePath = Path.GetFullPath(JsonFilePath);
             }
             var uberJSONCollection = ExtractValuesFromAssets(assets);
+            WriteToJson(JsonFilePath, uberJSONCollection);
+        }
 
+        public static UberJSON[] ExtractValuesFromAssets(string[] assets)
+        {
+            var uberJSONCollection = new List<Solicen.JSON.UberJSON>();
+            foreach (var asset in assets)
+            {
+                var FileName = Path.GetFileName(asset);
+                CLI.Console.WriteLine($"[DarkGray][INF] [White]...{FileName}");
+                Asset = AssetLoader.LoadAsset(asset);
+                if (Asset == null || KismetExtension.GetExportCount(Asset) == 0)
+                {
+                    Asset = null; 
+                }
+                else
+                {
+                    var allValues = ExtractValuesToLiteObject();
+                    if (allValues.Length > 0)
+                    {
+                        var uberJSON = new UberJSON(FileName);
+                        foreach (var value in allValues)
+                        {
+                            uberJSON.Add(new KismetString() { KeyValue = value.KeyValue, Original = value.Value });
+                        }
+                        uberJSONCollection.Add(uberJSON);
+                    }
+
+                    // --- Отладочный вывод и безопасный режим (без сохранения) ---
+                    if (CLI.CLIHandler.Config.DebugMode)
+                    {
+                        var _json = Asset.SerializeJson(Formatting.Indented);
+                        // Сохраняем итоговый JSON в файл для ручной проверки
+                        File.WriteAllText($"{Environment.CurrentDirectory}\\Ubergraph.json", _json);
+                        Solicen.CLI.Console.WriteLine($"[INF] The JSON is saved in: {Environment.CurrentDirectory}\\Ubergraph.json");
+                    }
+                }
+                GC.Collect(2);
+            }
+
+            return uberJSONCollection.ToArray();
+
+        }
+
+        public static void WriteToJson(string JsonFilePath, UberJSON[] uberJSONCollection)
+        {
             #region Сохранение UberJSON
             if (File.Exists(JsonFilePath))
             {
@@ -94,43 +134,6 @@ namespace Solicen.Kismet
             }
             #endregion
             CLI.Console.WriteLine($"[Green][SUCCESS] [White]File with extracted strings was successfully saved in:\n[DarkGray]{JsonFilePath}\n");
-        }
-
-        public static UberJSON[] ExtractValuesFromAssets(string[] assets)
-        {
-            var uberJSONCollection = new List<Solicen.JSON.UberJSON>();
-            foreach (var asset in assets)
-            {
-                var FileName = Path.GetFileName(asset);
-                CLI.Console.WriteLine($"[DarkGray][INF] [White]...{FileName}");
-                Asset = AssetLoader.LoadAsset(asset);
-                if (Asset == null || KismetExtension.GetExportCount(Asset) == 0)
-                {
-                    Asset = null; 
-                }
-                var allValues = ExtractValuesToLiteObject(asset);
-                if (allValues.Length > 0)
-                {
-                    var uberJSON = new UberJSON(FileName);
-                    foreach (var value in allValues)
-                    {
-                        uberJSON.Add(new KismetString() { KeyValue = value.KeyValue, Original = value.Value });
-                    }
-                    uberJSONCollection.Add(uberJSON);
-                }
-
-                // --- Отладочный вывод и безопасный режим (без сохранения) ---
-                if (CLI.CLIHandler.Config.DebugMode)
-                {
-                    var _json = Asset.SerializeJson(Formatting.Indented);
-                    // Сохраняем итоговый JSON в файл для ручной проверки
-                    File.WriteAllText($"{Environment.CurrentDirectory}\\Ubergraph.json", _json);
-                    Solicen.CLI.Console.WriteLine($"[INF] The JSON is saved in: {Environment.CurrentDirectory}\\Ubergraph.json");
-                }
-            }
-
-            return uberJSONCollection.ToArray();
-
         }
 
         public static void ExtractAndWriteCSV(string assetPath, string FileName = "")
@@ -205,7 +208,7 @@ namespace Solicen.Kismet
             return Array.Empty<LObject>();
         }
 
-        public static LObject[] ExtractFromUbergraph(string assetPath)
+        public static LObject[] ExtractFromUbergraph()
         {
 
             if (AllFunctionStringConst)
@@ -227,12 +230,12 @@ namespace Solicen.Kismet
             return Array.Empty<LObject>();
         }
 
-        public static LObject[] ExtractValuesToLiteObject(string assetPath)
+        public static LObject[] ExtractValuesToLiteObject()
         {
             List<LObject> AllExtractedStr = new List<LObject>();
             #region Получение строк любого вида
             var propStr = ExtractEachStrProperty(); // Получаем строки из каждого StrProperty
-            var ubergraphStr = ExtractFromUbergraph(assetPath); // Получаем строки из ExecuteUbergraph
+            var ubergraphStr = ExtractFromUbergraph(); // Получаем строки из ExecuteUbergraph
             var tableValues = ExtractEachAnyTableValue(); // Получаем строки из каждой таблицы
             var textValues = ExtractEachTextProperty(); // Получаем строки из каждого TextProperty
             #endregion

@@ -1,19 +1,10 @@
-﻿using Newtonsoft.Json;
-﻿﻿﻿using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Security.AccessControl;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using UAssetAPI;
-using UAssetAPI.ExportTypes;
-using UAssetAPI.Kismet;
-using UAssetAPI.Kismet.Bytecode;
-using UAssetAPI.Kismet.Bytecode.Expressions;
 using UAssetAPI.PropertyTypes.Objects;
-using UAssetAPI.PropertyTypes.Structs;
 using UAssetAPI.UnrealTypes;
 namespace Solicen.Kismet
 {
@@ -127,7 +118,7 @@ namespace Solicen.Kismet
 
             for (int i = 0; i < asset.Exports.Count; i++)
             {
-                if (asset.Exports[i] is UAssetAPI.ExportTypes.NormalExport normalExport)
+                if (asset.Exports[i] is global::UAssetAPI.ExportTypes.NormalExport normalExport)
                 {
                     foreach (var prop in normalExport.Data)
                     {
@@ -156,7 +147,7 @@ namespace Solicen.Kismet
 
             for (int i = 0; i < asset.Exports.Count; i++)
             {
-                if (asset.Exports[i] is UAssetAPI.ExportTypes.NormalExport normalExport)
+                if (asset.Exports[i] is global::UAssetAPI.ExportTypes.NormalExport normalExport)
                 {
                     foreach (var prop in normalExport.Data)
                     {
@@ -194,7 +185,7 @@ namespace Solicen.Kismet
 
             for (int i = 0; i < asset.Exports.Count; i++)
             {
-                if (asset.Exports[i] is UAssetAPI.ExportTypes.StringTableExport stringTableExport)
+                if (asset.Exports[i] is global::UAssetAPI.ExportTypes.StringTableExport stringTableExport)
                 {
                     foreach (var entry in stringTableExport.Table)
                     {
@@ -221,7 +212,7 @@ namespace Solicen.Kismet
 
             for (int i = 0; i < asset.Exports.Count; i++)
             {
-                if (asset.Exports[i] is UAssetAPI.ExportTypes.DataTableExport dataTableExport)
+                if (asset.Exports[i] is global::UAssetAPI.ExportTypes.DataTableExport dataTableExport)
                 {
                     foreach (var row in dataTableExport.Table.Data)
                     {
@@ -241,7 +232,7 @@ namespace Solicen.Kismet
                                 {
                                     
                                     key = prop.Name.Value.Value;
-                                    bool isAllowedNamespace = SearchNameSpace != "" && SearchNameSpace == key ? true : 
+                                    bool isAllowedNamespace = SearchNameSpace != "" && SearchNameSpace == key ? true :
                                         SearchNameSpace == "" ? true : false;
                                     if (!isAllowedNamespace) continue;
                                 }
@@ -272,7 +263,7 @@ namespace Solicen.Kismet
             int replacementCount = 0;
             foreach (var export in asset.Exports)
             {
-                if (export is UAssetAPI.ExportTypes.StringTableExport stringTableExport)
+                if (export is global::UAssetAPI.ExportTypes.StringTableExport stringTableExport)
                 {
                     foreach(var entry in stringTableExport.Table)
                     {
@@ -303,7 +294,7 @@ namespace Solicen.Kismet
             int replacementCount = 0;
             foreach (var export in asset.Exports)
             {
-                if (export is UAssetAPI.ExportTypes.DataTableExport dataTableExport)
+                if (export is global::UAssetAPI.ExportTypes.DataTableExport dataTableExport)
                 {
                     foreach (var row in dataTableExport.Table.Data)
                     {
@@ -335,7 +326,7 @@ namespace Solicen.Kismet
             foreach (var export in asset.Exports)
             {
 
-                if (export is UAssetAPI.ExportTypes.NormalExport normalExport)
+                if (export is global::UAssetAPI.ExportTypes.NormalExport normalExport)
                 {
                     // Мы не можем изменять коллекцию во время итерации, поэтому создаем копию для поиска
                     var propertiesToModify = normalExport.Data
@@ -377,7 +368,7 @@ namespace Solicen.Kismet
             int replacementCount = 0;
             foreach (var export in asset.Exports)
             {
-                if (export is UAssetAPI.ExportTypes.NormalExport normalExport)
+                if (export is global::UAssetAPI.ExportTypes.NormalExport normalExport)
                 {
                     // Мы не можем изменять коллекцию во время итерации, поэтому создаем копию для поиска
                     var propertiesToModify = normalExport.Data

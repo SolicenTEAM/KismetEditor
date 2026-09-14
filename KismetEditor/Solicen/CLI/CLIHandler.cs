@@ -1,11 +1,13 @@
 ﻿using Solicen.JSON;
 using Solicen.Kismet;
 using Solicen.Translator;
+using Solicen.UE4;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using UAssetAPI;
 
 namespace Solicen.CLI
 {
@@ -54,7 +56,7 @@ namespace Solicen.CLI
             /// <summary>
             /// Sets the Unreal Engine version based on the UAssetAPI.
             /// </summary>
-            public static UAssetAPI.UnrealTypes.EngineVersion Version = UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_18;
+            public static global::UAssetAPI.UnrealTypes.EngineVersion Version = global::UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_18;
 
             /// <summary>
             /// Disables the creation of a backup file when writing changes.
@@ -80,15 +82,15 @@ namespace Solicen.CLI
         }
         private static readonly string[] NotAllowedPath = new[] { 
             "\\ThirdParty\\", "\\Materials\\", "\\Terrain\\", "\\Effects\\", "\\FX\\",
-            "\\Engine\\", "\\Physics\\", "\\Plugins\\", "\\Config\\", "\\Mannequin\\", "\\StarterContent\\" };
-        private static List<string> AllowedExtensionForAsset = new List<string>() { ".uasset", ".umap" };
+            "Engine\\", "\\Physics\\", "\\Plugins\\", "\\Config\\", "\\Mannequin\\", "\\StarterContent\\",
+            "\\Animations\\", "\\Scripting\\", "\\Materials\\", "\\Textures\\", "\\Sound\\", "\\AI\\"};
+        private static List<string> AllowedExtensionForAsset = new List<string>() { ".uasset", ".umap", ".pak" };
         private static readonly List<Argument> arguments;
 
         static CLIHandler()
         {
             arguments = new List<Argument>
             {
-                // [WIP] new Argument("--virtual", "-v", "Activate virtual provider for (.pak|.ucas).", () => Config.Virtual = true),
                 // By default, StringConst is enabled only in Ubergraph and occurrences of StrProperty. You can extend the extraction with the arguments below.
                 new Argument("--sconst",    "-sc",  "Extract strings EX_StringConst from all UFunction with ScriptBytecode.", () => Config.AllFunctionStringConst = true),
                 new Argument("--tprop",     "-tp",  "Extract fallback localization strings with TextProperty type.", () => Config.AllowTextProperty = true),
@@ -113,6 +115,8 @@ namespace Solicen.CLI
                 new Argument("--pack-folder", "-pf", "Translate and pack assets into auto prepared folder (e.g., 'ManicMiners_RUS')", (folder) => { BytecodeModifier.PackIntoFolder = true; BytecodeModifier.PackFolder = folder; }),
                 new Argument("--version", "-v", "Set the engine version for correct processing (e.g., -v=5.1).", ProcessVersion),
                 new Argument("--run", "-r", "Execute a command in the terminal after completion (e.g., --run=[CommandArgs])", (cmd) => Config.RunCommand = cmd),
+                new Argument("--virtual", "-vir", "The provider switches to a virtual mode of reading assets instead of searching for them on the disk.", () => Config.Virtual = true),
+                new Argument("--aes", "-a", "32-character hex string as AES key", (key) => AssetLoader.AES = key),
 
                 new Argument("--all-directories", "-alldir", "Disables filter with specifed directory names for analyze and asset processing.", () => Config.AllDirectories = true),
                 new Argument("--namespace", "-ns", "Include namespace::value in output JSON", () => MapParser.IncludeNameSpace = true),
@@ -121,7 +125,7 @@ namespace Solicen.CLI
                 new Argument("--debug", "-d", "Enables debug mode with additional information output.",() => Config.DebugMode = true),
 
                 new Argument("--api-key", "-api", "Set key for OpenRouter.", (key) => Translator.UberTranslator.OpenRouterApiKey = key),
-                new Argument("--api-Model", "-model", "Set model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)", (model) => Translator.UberTranslator.OpenRouterModel  = model),
+                new Argument("--api-Model", "-model", "Set model for OpenRouter (e.g, -model=tngtech/deepseek-r1t2-chimera:free)", (model) => Translator.UberTranslator.OpenRouterModel  = model),
                 new Argument("--source-lang", "-sl", "Set the source language for translation (e.g., -sl=en).", (lang) => UberTranslator.LanguageFrom = lang),
                 new Argument("--target-lang", "-tl", "Set the target language for translation (e.g., -tl=ru).", (lang) => UberTranslator.LanguageTo = lang),
                 new Argument("--endpoint", "-e", "Set the translation service endpoint (e.g., -e=yandex).", (endpoint) => UberTranslator.Endpoint = endpoint),
@@ -543,12 +547,13 @@ namespace Solicen.CLI
                             }
                             else
                             {
-                                CLI.Console.WriteLine($"[Yellow][WARN] [White]No translated values for '{uber.FileName}' — skipped (all values empty). Fill 'Translation' column in JSON.");
+                                CLI.Console.WriteLine($"[Yellow][WARN] [White]No NewValue's for '{uber.FileName}' — skipped (all NewValue's empty).");
                             }
                         }
                         if (modified == 0)
-                            CLI.Console.WriteLine($"[Yellow][WARN] [White]No assets were modified. Check that JSON contains non-empty translations.");
+                            CLI.Console.WriteLine($"[Yellow][WARN] [White]No assets were modified. Check that JSON contains non-empty NewValue's.");
                     }
+                    // JSON/CSV -> Asset/Pak
                     else if (targetIsAsset)
                     {
                         CLI.Console.WriteLine($"[DarkGray][INF] [Wihte]Replacement mode / [Magenta]UberJSON");
@@ -571,12 +576,52 @@ namespace Solicen.CLI
                             var values = uber.GetValues().Where(x => !string.IsNullOrEmpty(x.Value)).ToDictionary();
                             if (values.Count == 0)
                             {
-                                CLI.Console.WriteLine($"[Yellow][WARN] [White]JSON '{uber.FileName}' has no non-empty translations — nothing to pack.");
+                                CLI.Console.WriteLine($"[Yellow][WARN] [White]JSON '{uber.FileName}' has no non-empty NewValue's — nothing to pack.");
                             }
                             else
                             {
-                                Kismet.BytecodeModifier.ModifyAsset(assetFile, values, Config.AllowTable);
-                                AddToFileList(assetFile);
+                                if (Path.GetExtension(assetFile) == ".pak")
+                                {
+                                    // Модификация виртуальных ассетов
+                                    using (var provider = new UnrealArchiveReader(assetFile, AssetLoader.Version, AssetLoader.MappingsPath, AssetLoader.AES))
+                                    {
+                                        var files = provider.GetAssets();
+                                        AssetLoader.SetProvider(provider);
+                                        BytecodeModifier.CreateBak = false;
+
+                                        int modified = 0;
+                                        foreach (var file in uberJSONCollection)
+                                        {
+                                            assetFile = files.FirstOrDefault(x => Path.GetFileNameWithoutExtension(x) == Path.GetFileNameWithoutExtension(uber.FileName));
+                                            if (assetFile == null)
+                                            {
+                                                if (Config.DebugMode)
+                                                    CLI.Console.WriteLine($"[DarkGray][INF] No matching asset for JSON '{uber.FileName}' — skipped.[White]");
+                                                continue;
+                                            }
+                                            var uberValues = file.GetValues().Where(x => !string.IsNullOrEmpty(x.Value)).ToDictionary();
+                                            if (values.Count > 0)
+                                            {
+                                                Kismet.BytecodeModifier.ModifyAsset(assetFile, uberValues, Config.AllowTable);
+                                                AddToFileList(assetFile);
+                                                modified++;
+                                            }
+                                            else
+                                            {
+                                                CLI.Console.WriteLine($"[Yellow][WARN] [White]No NewValue's for '{uber.FileName}' — skipped (all NewValue's empty).");
+                                            }
+                                        }
+                                        if (modified == 0)
+                                            CLI.Console.WriteLine($"[Yellow][WARN] [White]No assets were modified. Check that JSON contains non-empty NewValue's.");    
+                                    }
+                                }
+                                else
+                                {
+                                    // Обычная модификация одиночного ассета
+                                    Kismet.BytecodeModifier.ModifyAsset(assetFile, values, Config.AllowTable);
+                                    AddToFileList(assetFile);
+                                }
+
                             }
                         }
                     }
@@ -686,13 +731,49 @@ namespace Solicen.CLI
                                 displayPath = Path.Combine(EnvironmentHelper.AssemblyDirectory, passedName.EndsWith(".json", StringComparison.OrdinalIgnoreCase) ? passedName : passedName + ".json");
 
                             CLI.Console.WriteLine($"[DarkGray][INF] [White]Custom output: [Cyan]{customOutputJson}[White] -> [DarkGray]{displayPath}[White]");
-                            BytecodeExtractor.ExtractAndWriteUJson(assetFile, passedName);
+
+                            // При виртуальном провайдере может быть только полное сканирование
+                            if (Config.Virtual)
+                            {
+                                using (var provider = new UnrealArchiveReader(assetFile, AssetLoader.Version, AssetLoader.MappingsPath, AssetLoader.AES))
+                                {
+                                    if (!Config.AllDirectories) 
+                                        provider.NotAllowedPath = NotAllowedPath;
+
+                                    var files = provider.GetAssets();
+
+                                    AssetLoader.SetProvider(provider);
+                                    BytecodeExtractor.ExtractAndWriteUJson(files, passedName);
+                                }
+                            }
+                            else // Иначе это .uasset/.usmap на диске
+                            {
+                                BytecodeExtractor.ExtractAndWriteUJson(assetFile, passedName);
+                            }
                             UberJSONName = Path.GetFileNameWithoutExtension(passedName);
                         }
                         else
                         {
                             UberJSONName = Path.GetFileNameWithoutExtension(assetFile);
-                            BytecodeExtractor.ExtractAndWriteUJson(assetFile, UberJSONName);
+
+                            // При виртуальном провайдере может быть только полное сканирование
+                            if (Config.Virtual)
+                            {
+                                using (var provider = new UnrealArchiveReader(assetFile, AssetLoader.Version, AssetLoader.MappingsPath, AssetLoader.AES))
+                                {
+                                    if (!Config.AllDirectories) 
+                                        provider.NotAllowedPath = NotAllowedPath;
+
+                                    var files = provider.GetAssets();
+
+                                    AssetLoader.SetProvider(provider);
+                                    BytecodeExtractor.ExtractAndWriteUJson(files, UberJSONName);
+                                }
+                            }
+                            else // Иначе это .uasset/.usmap на диске
+                            {
+                                BytecodeExtractor.ExtractAndWriteUJson(assetFile, UberJSONName);
+                            }
                         }
                     }
                     if (isFolder)// Это папка
@@ -807,14 +888,14 @@ namespace Solicen.CLI
                 return;
             }
 
-            UAssetAPI.UnrealTypes.EngineVersion engineVersion = Config.Version;
+            global::UAssetAPI.UnrealTypes.EngineVersion engineVersion = Config.Version;
             bool parsed = false;
 
             try
             {
                 if (original.StartsWith("UE3", StringComparison.OrdinalIgnoreCase))
                 {
-                    engineVersion = UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_OLDEST_LOADABLE_PACKAGE;
+                    engineVersion = global::UAssetAPI.UnrealTypes.EngineVersion.VER_UE4_OLDEST_LOADABLE_PACKAGE;
                     parsed = true;
                 }
                 else
