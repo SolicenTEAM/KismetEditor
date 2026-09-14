@@ -570,7 +570,6 @@ namespace Solicen.CLI
                                 AssetLoader.SetProvider(provider);      // Загружаем провайдер в лоадер, для загрузки виртуальных файлов
                                 BytecodeModifier.CreateBak = false;     // Нет смысла создавать .bak если ассет виртуальный
                                 BytecodeModifier.PackIntoFolder = true; // Мы не можем паковать в .pak напрямую.
-                                BytecodeModifier.IsVirtual = true;      // Явно указываем виртуал, чтобы получать виртуальные пути
 
                                 int modified = 0;
                                 foreach (var file in uberJSONCollection)

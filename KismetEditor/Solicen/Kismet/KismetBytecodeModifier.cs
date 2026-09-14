@@ -18,7 +18,6 @@ namespace Solicen.Kismet
         public static string PackFolder = "Uber_P";
         public static bool CreateBak = true;
         public static UAsset Asset; static bool UseBak = true;
-        public static bool IsVirtual = false;
 
         private static Dictionary<string,string> RemoveAnyCode(Dictionary<string, string> replacement)
         {
@@ -101,18 +100,16 @@ namespace Solicen.Kismet
                 var virtualPath = Asset.FolderName != null ? Asset.FolderName.Value.Replace("/Game/", "/Game/Content/").Replace("/","\\"): "";
                 if (virtualPath == "")
                 {
-                    if (IsVirtual)
-                    {
-                        // Если это виртуальный ассет то получаем папку виртуального пути
-                        virtualPath = UnrealPath.VirtualFolderWithoutFileName(path);
-                    }
-                    else
-                    {
-                        // Если не найден виртуальный путь в ассетах (отсутствуют mappings)
-                        // Пытаемся получить путь текущего распакованного архива .pak|.ucas
-                        virtualPath = UnrealPath.FolderWithoutFileName(path);
-                    }
+                    // Если не найден виртуальный путь в ассетах (отсутствуют mappings)
+                    // Пытаемся получить путь текущего распакованного архива .pak|.ucas
+                    virtualPath = UnrealPath.FolderWithoutFileName(path);
                 }
+                else if (virtualPath == "None")
+                {
+                    // Если это виртуальный ассет то получаем папку виртуального пути
+                    virtualPath = UnrealPath.VirtualFolderWithoutFileName(path).Replace("/","\\");
+                }
+
                 var folderPath = PackFolder.Contains("\\") ? PackFolder+$"\\{virtualPath}\\" : EnvironmentHelper.AssemblyDirectory + $"\\{PackFolder}\\{virtualPath}";
                 path = $"{folderPath}\\{fileName}";
                 Directory.CreateDirectory(folderPath);
@@ -130,7 +127,8 @@ namespace Solicen.Kismet
             #endregion
             Asset.Write(path);
             Solicen.CLI.Console.StopProgress($"[Green][SUCCESS] [White]...{Path.GetFileName(path)}");
-            
+            Solicen.CLI.Console.WriteLine($"[Green]Completed! Changes saved to: {path}");
+
         }
     }
 

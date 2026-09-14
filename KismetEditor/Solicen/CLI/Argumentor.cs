@@ -363,7 +363,7 @@ namespace Solicen.CLI
                         var allowedAsset = new[] { ".uasset", ".umap" };
                         var allowedUexp = new[] { ".uexp" };
                         var allowedData = new[] { ".json", ".csv" };
-                        var allAllowed = allowedAsset.Concat(allowedUexp).Concat(allowedData).Concat(new[] { ".usmap" }).ToArray();
+                        var allAllowed = allowedAsset.Concat(allowedUexp).Concat(allowedData).Concat(new[] { ".usmap", ".pak" }).ToArray();
                         if (!allAllowed.Contains(ext))
                         {
                             CLI.Console.WriteLine($"[Yellow][WARN] [White]File '[Yellow]{cleaned}[White]' has unusual extension '[Yellow]{ext}[White]'. Expected .uasset/.umap/.uexp/.json/.csv");
