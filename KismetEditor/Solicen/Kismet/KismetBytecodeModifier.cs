@@ -127,7 +127,6 @@ namespace Solicen.Kismet
             #endregion
             Asset.Write(path);
             Solicen.CLI.Console.StopProgress($"[Green][SUCCESS] [White]...{Path.GetFileName(path)}");
-            Solicen.CLI.Console.WriteLine($"[Green]Completed! Changes saved to: {path}");
 
         }
     }
