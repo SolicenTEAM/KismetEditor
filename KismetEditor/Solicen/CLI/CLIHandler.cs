@@ -92,11 +92,11 @@ namespace Solicen.CLI
             arguments = new List<Argument>
             {
                 // By default, StringConst is enabled only in Ubergraph and occurrences of StrProperty. You can extend the extraction with the arguments below.
-                new Argument("--sconst",    "-sc",  "Extract strings EX_StringConst from all UFunction with ScriptBytecode.", () => Config.AllFunctionStringConst = true),
-                new Argument("--tprop",     "-tp",  "Extract fallback localization strings with TextProperty type.", () => Config.AllowTextProperty = true),
-                new Argument("--lsource",   "-ls",  "Extract fallback localization strings with LocalizedSource type.", () => Config.AllowLocalizedSource = true),
-                new Argument("--dstable",   "-dst", "Extract fallback localization strings from Data/String Table assets.", () => Config.AllowTable = true),
-                new Argument("--alltypes",  "-all", "Extract strings from all possible types (includes Table and LocalizedSource and TextProperty).", 
+                new Argument("--sconst",    "-sc",  "Extract and pack strings EX_StringConst from all UFunction with ScriptBytecode.", () => Config.AllFunctionStringConst = true),
+                new Argument("--tprop",     "-tp",  "Extract and pack fallback localization strings with TextProperty type.", () => Config.AllowTextProperty = true),
+                new Argument("--lsource",   "-ls",  "Extract and pack fallback localization strings with LocalizedSource type.", () => Config.AllowLocalizedSource = true),
+                new Argument("--dstable",   "-dst", "Extract and pack fallback localization strings from Data/String Table assets.", () => Config.AllowTable = true),
+                new Argument("--alltypes",  "-all", "Extract and pack strings from all possible types (includes Table and LocalizedSource and TextProperty).", 
                 () => {
                     Config.AllowTable = true; 
                     Config.AllowLocalizedSource = true;
@@ -585,9 +585,10 @@ namespace Solicen.CLI
                                     // Модификация виртуальных ассетов
                                     using (var provider = new UnrealArchiveReader(assetFile, AssetLoader.Version, AssetLoader.MappingsPath, AssetLoader.AES))
                                     {
-                                        var files = provider.GetAssets();
-                                        AssetLoader.SetProvider(provider);
-                                        BytecodeModifier.CreateBak = false;
+                                        var files = provider.GetAssets();       // Получаем список всех файлов в провайдере
+                                        AssetLoader.SetProvider(provider);      // Загружаем провайдер в лоадер, для загрузки виртуальных файлов
+                                        BytecodeModifier.CreateBak = false;     // Нет смысла создавать .bak если ассет виртуальный
+                                        BytecodeModifier.PackIntoFolder = true; // Мы не можем паковать в .pak напрямую.
 
                                         int modified = 0;
                                         foreach (var file in uberJSONCollection)
