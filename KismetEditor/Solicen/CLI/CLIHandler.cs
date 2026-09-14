@@ -1,4 +1,5 @@
-﻿using Solicen.JSON;
+﻿using Newtonsoft.Json.Linq;
+using Solicen.JSON;
 using Solicen.Kismet;
 using Solicen.Translator;
 using Solicen.UE4;
@@ -560,61 +561,62 @@ namespace Solicen.CLI
                         CLI.Console.Separator(64);
                         // В режиме single-asset assetFile может быть null если IsAsset фильтр не прошел из-за NotAllowedPath
                         if (assetFile == null) assetFile = targetPath;
-                        var uber = uberJSONCollection.FirstOrDefault(x => Path.GetFileNameWithoutExtension(assetFile).Equals(Path.GetFileNameWithoutExtension(x.FileName), StringComparison.OrdinalIgnoreCase));
-                        if (uber == null)
+                        if (Path.GetExtension(assetFile) == ".pak")
                         {
-                            CLI.Console.WriteLine($"[Yellow][WARN] [White]No JSON entry matches asset '{Path.GetFileName(assetFile)}'. Available JSON files: {string.Join(", ", uberJSONCollection.Select(u => u.FileName))}");
-                            // Попробуем взять первый если всего один
-                            if (uberJSONCollection.Length == 1)
+                            // Модификация виртуальных ассетов
+                            using (var provider = new UnrealArchiveReader(assetFile, AssetLoader.Version, AssetLoader.MappingsPath, AssetLoader.AES))
                             {
-                                uber = uberJSONCollection[0];
-                                CLI.Console.WriteLine($"[DarkGray]  Using single JSON '{uber.FileName}' anyway.[White]");
+                                var files = provider.GetAssets();       // Получаем список всех файлов в провайдере
+                                AssetLoader.SetProvider(provider);      // Загружаем провайдер в лоадер, для загрузки виртуальных файлов
+                                BytecodeModifier.CreateBak = false;     // Нет смысла создавать .bak если ассет виртуальный
+                                BytecodeModifier.PackIntoFolder = true; // Мы не можем паковать в .pak напрямую.
+                                BytecodeModifier.IsVirtual = true;      // Явно указываем виртуал, чтобы получать виртуальные пути
+
+                                int modified = 0;
+                                foreach (var file in uberJSONCollection)
+                                {
+                                    assetFile = files.FirstOrDefault(x => Path.GetFileNameWithoutExtension(x) == Path.GetFileNameWithoutExtension(file.FileName));
+                                    if (assetFile == null)
+                                    {
+                                        if (Config.DebugMode)
+                                            CLI.Console.WriteLine($"[DarkGray][INF] No matching asset for JSON '{file.FileName}' — skipped.[White]");
+                                        continue;
+                                    }
+                                    var uberValues = file.GetValues().Where(x => !string.IsNullOrEmpty(x.Value)).ToDictionary();
+                                    if (uberValues.Count > 0)
+                                    {
+                                        Kismet.BytecodeModifier.ModifyAsset(assetFile, uberValues, Config.AllowTable);
+                                        AddToFileList(assetFile);
+                                        modified++;
+                                    }
+                                    else
+                                    {
+                                        CLI.Console.WriteLine($"[Yellow][WARN] [White]No NewValue's for '{file.FileName}' — skipped (all NewValue's empty).");
+                                    }
+                                }
+                                if (modified == 0)
+                                    CLI.Console.WriteLine($"[Yellow][WARN] [White]No assets were modified. Check that JSON contains non-empty NewValue's.");
                             }
                         }
-                        if (uber != null)
+                        else
                         {
-                            var values = uber.GetValues().Where(x => !string.IsNullOrEmpty(x.Value)).ToDictionary();
-                            if (values.Count == 0)
+                            var uber = uberJSONCollection.FirstOrDefault(x => Path.GetFileNameWithoutExtension(assetFile).Equals(Path.GetFileNameWithoutExtension(x.FileName), StringComparison.OrdinalIgnoreCase));
+                            if (uber == null)
                             {
-                                CLI.Console.WriteLine($"[Yellow][WARN] [White]JSON '{uber.FileName}' has no non-empty NewValue's — nothing to pack.");
-                            }
-                            else
-                            {
-                                if (Path.GetExtension(assetFile) == ".pak")
+                                CLI.Console.WriteLine($"[Yellow][WARN] [White]No JSON entry matches asset '{Path.GetFileName(assetFile)}'. Available JSON files: {string.Join(", ", uberJSONCollection.Select(u => u.FileName))}");
+                                // Попробуем взять первый если всего один
+                                if (uberJSONCollection.Length == 1)
                                 {
-                                    // Модификация виртуальных ассетов
-                                    using (var provider = new UnrealArchiveReader(assetFile, AssetLoader.Version, AssetLoader.MappingsPath, AssetLoader.AES))
-                                    {
-                                        var files = provider.GetAssets();       // Получаем список всех файлов в провайдере
-                                        AssetLoader.SetProvider(provider);      // Загружаем провайдер в лоадер, для загрузки виртуальных файлов
-                                        BytecodeModifier.CreateBak = false;     // Нет смысла создавать .bak если ассет виртуальный
-                                        BytecodeModifier.PackIntoFolder = true; // Мы не можем паковать в .pak напрямую.
-
-                                        int modified = 0;
-                                        foreach (var file in uberJSONCollection)
-                                        {
-                                            assetFile = files.FirstOrDefault(x => Path.GetFileNameWithoutExtension(x) == Path.GetFileNameWithoutExtension(uber.FileName));
-                                            if (assetFile == null)
-                                            {
-                                                if (Config.DebugMode)
-                                                    CLI.Console.WriteLine($"[DarkGray][INF] No matching asset for JSON '{uber.FileName}' — skipped.[White]");
-                                                continue;
-                                            }
-                                            var uberValues = file.GetValues().Where(x => !string.IsNullOrEmpty(x.Value)).ToDictionary();
-                                            if (values.Count > 0)
-                                            {
-                                                Kismet.BytecodeModifier.ModifyAsset(assetFile, uberValues, Config.AllowTable);
-                                                AddToFileList(assetFile);
-                                                modified++;
-                                            }
-                                            else
-                                            {
-                                                CLI.Console.WriteLine($"[Yellow][WARN] [White]No NewValue's for '{uber.FileName}' — skipped (all NewValue's empty).");
-                                            }
-                                        }
-                                        if (modified == 0)
-                                            CLI.Console.WriteLine($"[Yellow][WARN] [White]No assets were modified. Check that JSON contains non-empty NewValue's.");    
-                                    }
+                                    uber = uberJSONCollection[0];
+                                    CLI.Console.WriteLine($"[DarkGray]  Using single JSON '{uber.FileName}' anyway.[White]");
+                                }
+                            }
+                            if (uber != null)
+                            {
+                                var values = uber.GetValues().Where(x => !string.IsNullOrEmpty(x.Value)).ToDictionary();
+                                if (values.Count == 0)
+                                {
+                                    CLI.Console.WriteLine($"[Yellow][WARN] [White]JSON '{uber.FileName}' has no non-empty NewValue's — nothing to pack.");
                                 }
                                 else
                                 {
@@ -622,9 +624,9 @@ namespace Solicen.CLI
                                     Kismet.BytecodeModifier.ModifyAsset(assetFile, values, Config.AllowTable);
                                     AddToFileList(assetFile);
                                 }
-
                             }
                         }
+
                     }
                     else
                     {

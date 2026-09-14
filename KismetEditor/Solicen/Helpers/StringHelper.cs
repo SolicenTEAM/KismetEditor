@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -37,16 +36,6 @@ public static class StringHelper
             .Replace("\\r", "\r")
             .Replace("\\t", "\t")
             .Replace("\"\"", "\"");
-    }
-    public static string UE_FolderWithFileName(this string unrealFile)
-    {
-        var match = new Regex(@"\\([^\\]+)\\Content(?!.*Paks)\\.+").Match(unrealFile).Value.TrimEnd('\"');
-        return string.IsNullOrWhiteSpace(match) ? unrealFile : match;
-    }
-    public static string UE_FolderWithoutFileName(this string unrealFile)
-    {
-        var match = new Regex(@"\\([^\\]+)\\Content(?!.*Paks)\\.+").Match(unrealFile).Value.TrimEnd('\"');
-        return string.IsNullOrWhiteSpace(match) ? unrealFile : match.Replace(Path.GetFileName(unrealFile), "");
     }
 
     public static bool IsAllNumber(this string str)
