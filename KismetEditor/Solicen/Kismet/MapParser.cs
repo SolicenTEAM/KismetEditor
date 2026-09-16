@@ -294,15 +294,16 @@ namespace Solicen.Kismet
             int replacementCount = 0;
             foreach (var export in asset.Exports)
             {
-                if (export is global::UAssetAPI.ExportTypes.DataTableExport dataTableExport)
+                if (export is UAssetAPI.ExportTypes.DataTableExport dataTableExport)
                 {
                     foreach (var row in dataTableExport.Table.Data)
                     {
                         foreach (var prop in row.Value)
                         {
-                            if (prop.RawValue != null)
+                            if (prop.PropertyType.Value == "StrProperty")
                             {
-                                prop.RawValue = newValue;
+                                prop.RawValue = new FString(newValue);
+                                replacementCount++;
                             }
                         }
                     }
