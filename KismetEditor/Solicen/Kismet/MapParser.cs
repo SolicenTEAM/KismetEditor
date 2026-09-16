@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UAssetAPI;
+using UAssetAPI.ExportTypes;
 using UAssetAPI.PropertyTypes.Objects;
 using UAssetAPI.UnrealTypes;
 namespace Solicen.Kismet
@@ -300,7 +301,8 @@ namespace Solicen.Kismet
                     {
                         foreach (var prop in row.Value)
                         {
-                            if (prop.PropertyType.Value == "StrProperty")
+                            if (prop is StrPropertyData strProp 
+                                && strProp.Value?.Value == originalValue)
                             {
                                 prop.RawValue = new FString(newValue);
                                 replacementCount++;
