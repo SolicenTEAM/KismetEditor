@@ -105,3 +105,4 @@ Modified assets are written as separate legacy files under the output folder. **
 ## Thanks
 - [Ambi](https://github.com/JunkBeat) for idea and his research. 
 - [@atenfyr](https://github.com/atenfyr) for research and [UAssetAPI](https://github.com/atenfyr/UAssetAPI).
+- [trumank](https://github.com/trumank) for [retoc](https://github.com/trumank/retoc) and [repak](https://github.com/trumank/repak) libraries.

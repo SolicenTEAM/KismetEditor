@@ -146,3 +146,4 @@ cargo test --manifest-path Native/IoStoreBridge/Cargo.toml --locked
 ## Благодарности
 - [Ambi](https://github.com/JunkBeat) — за идею и его исследования.
 - [@atenfyr](https://github.com/atenfyr) — за исследования и [UAssetAPI](https://github.com/atenfyr/UAssetAPI).
+- [trumank](https://github.com/trumank) за библиотеки [retoc](https://github.com/trumank/retoc) и [repak](https://github.com/trumank/repak).
