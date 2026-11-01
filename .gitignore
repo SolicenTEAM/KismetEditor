@@ -7,3 +7,5 @@ packages
 *launchSettings.json
 *MigrationBackup
 *Publish*
+get_last_commits.bat
+git_commits.py

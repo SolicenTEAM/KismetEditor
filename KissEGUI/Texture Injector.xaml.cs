@@ -188,7 +188,7 @@ namespace KissEGUI
                             if (!Directory.Exists(outputDir))
                                 Directory.CreateDirectory(outputDir);
 
-                            var virtualPath = pair.Item1.FilePath.UE_FolderWithoutFileName();
+                            var virtualPath = UnrealPath.FolderWithoutFileName(pair.Item1.FilePath);
                             var fullPath = $"{outputDir}\\{virtualPath}";
                             var fileName = Path.GetFileNameWithoutExtension(pair.Item1.FilePath);
 

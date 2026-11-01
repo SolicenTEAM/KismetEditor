@@ -1,4 +1,4 @@
-﻿using HandyControl.Controls;
+﻿﻿using HandyControl.Controls;
 using HandyControl.Data;
 using Microsoft.Win32;
 using Newtonsoft.Json;
@@ -128,6 +128,9 @@ namespace KissEGUI
 
         public ObservableCollection<DataItem> DataItems { get; set; }
         public ICollectionView ItemsView { get; private set; }
+
+        public bool IsTranslationMemoryEnabled { get; set; } = true;
+        public bool IsOnlineSuggestionsEnabled { get; set; } = false;
         public bool IsTextWrappingEnabled { get; set; } = true;
         public ObservableCollection<UEVersionItem> UEVersions { get; set; }
         public ObservableCollection<TMSuggestion> TranslationMemorySuggestions { get; set; }
@@ -170,7 +173,7 @@ namespace KissEGUI
             LoadSettings();
 
             this.DataContext = this;
-
+            
             this.Closing += MainWindow_Closing;
             
         }
@@ -811,6 +814,7 @@ namespace KissEGUI
             if (sfd.ShowDialog() == true)
             {
                 UberJSONProcessor.SaveFile(uberCollection.ToArray(), sfd.FileName);
+                FilePath = sfd.FileName;
             }
         }
         private void OpenFile(object sender, RoutedEventArgs e)
@@ -879,6 +883,7 @@ namespace KissEGUI
                         dataGrid.RowStyle = rowStyle;
                         
 
+
                         // Привязываем горячие клавиши к DataGrid
                         dataGrid.InputBindings.Add(new KeyBinding(new RelayCommand(_ => DeleteSelectedRow(dataGrid)), Key.Delete, ModifierKeys.None));
                         dataGrid.InputBindings.Add(new KeyBinding(new RelayCommand(_ => TranslateSelectedRow(dataGrid)), Key.I, ModifierKeys.Control));
@@ -905,6 +910,7 @@ namespace KissEGUI
             {
                 var originalText = rowView["Original"]?.ToString();
                 if (string.IsNullOrWhiteSpace(originalText)) return;
+                if (!IsTranslationMemoryEnabled) return;
 
                 var suggestions = new List<TMSuggestion>();
 
@@ -934,7 +940,7 @@ namespace KissEGUI
                             OnlineSuggestions.Add(suggestion);
                         }
                     }
-                    else
+                    else if (IsOnlineSuggestionsEnabled)
                     {
                         // 2. Если в кэше нет, делаем запрос к API
                         var yTranslated = yTranslate.TranslateAsync(originalText, TargetLanguage, SourceLanguage).Result.Translation;
@@ -1072,6 +1078,11 @@ namespace KissEGUI
 
 
 
+        }
+
+        private void NewWindow_Click(object sender, RoutedEventArgs e)
+        {
+            new MainWindow().Show();
         }
 
         private void AddNewTable_Click(object sender, RoutedEventArgs e)

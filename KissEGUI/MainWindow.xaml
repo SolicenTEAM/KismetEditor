@@ -16,15 +16,20 @@
 
     <hc:Window.NonClientAreaContent>
         <Grid MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-            <Menu Background="Transparent" Foreground="{DynamicResource PrimaryTextBrush}" HorizontalAlignment="Left">
+            <Menu Background="Transparent" VerticalAlignment="Center" HorizontalAlignment="Left">
                 <MenuItem Header="_File">
-                    <MenuItem Header="Open" InputGestureText="Ctrl+O" Click="OpenFile"/>
+                    <MenuItem Header="New file…" InputGestureText="Ctrl+N" Click="AddNewTable_Click"/>
+                    <MenuItem Header="New Window" InputGestureText="Ctrl+Shift+N" Click="NewWindow_Click"/>
+                    <Separator Background="#424242"></Separator>
+                    <MenuItem Header="Open file…" InputGestureText="Ctrl+O" Click="OpenFile"/>
+                    <Separator Background="#424242"></Separator>
                     <MenuItem Header="Save" InputGestureText="Ctrl+S" Click="SaveFile"/>
-                    <MenuItem Header="Save as" InputGestureText="Ctrl+Shift+S" Click="SaveAsFile"/>
+                    <MenuItem Header="Save as…" InputGestureText="Ctrl+Shift+S" Click="SaveAsFile"/>
                     <MenuItem Header="Exit" InputGestureText="Alt+F4" Click="Exit_Click"/>
                 </MenuItem>
                 <MenuItem Header="_Tool">
                     <MenuItem Header="Find" InputGestureText="Ctrl+F" Command="{Binding ShowSearchCommand}"/>
+                    <!---
                     <MenuItem Header="_Import">
                         <MenuItem Header="_UberJson">
                             <MenuItem Header="Add new values" Click="AddImport"/>
@@ -34,8 +39,16 @@
                         <MenuItem Header="_LocresCSV">
                         </MenuItem>
                     </MenuItem>
-                    <MenuItem Header="Set mapping file" Click="SetMappings_Click" />
-                    <MenuItem Header="Add new file" Click="AddNewTable_Click" />
+                    -->
+                    <MenuItem Header="_Repacking">
+                        <MenuItem Header="Replace Kismets"/>
+                    </MenuItem>
+                    <MenuItem Header="Set mapping" Click="SetMappings_Click" />
+                    <!--
+                    <MenuItem Header="_Table">
+                        <MenuItem Header="Add new file" Click="AddNewTable_Click" />
+                    </MenuItem>
+                    -->
                 </MenuItem>
                 <MenuItem Header="_View">
                     <MenuItem Header="Word Wrap" IsCheckable="True" IsChecked="{Binding IsTextWrappingEnabled, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}" Click="TextWrapMenuItem_Click"/>
@@ -44,6 +57,12 @@
                 </MenuItem>
                 <MenuItem Header="_Extra">
                     <MenuItem Header="Texture Injector" Click="OpenTextureInjector"/>
+                    <MenuItem Header="_Translator">
+                        <MenuItem Header="Enable online suggestions" IsCheckable="True" IsChecked="{Binding IsOnlineSuggestionsEnabled, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                    </MenuItem>
+                    <MenuItem Header="_Translation Memory">
+                        <MenuItem Header="Enable memory" IsCheckable="True" IsChecked="{Binding IsTranslationMemoryEnabled, Mode=TwoWay, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                    </MenuItem>
                 </MenuItem>
                 <MenuItem Header="_About">
                     <MenuItem Header="Donate"/>
@@ -175,7 +194,7 @@
                 <GridSplitter Grid.Row="3" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="Transparent"/>
 
                 <!-- Блок онлайн-подсказок -->
-                <DockPanel Grid.Row="4">
+                <DockPanel Grid.Row="4" Name="RightPanel">
                     <hc:Divider DockPanel.Dock="Top" Margin="10,5" Foreground="#FF6D6D6D" Content="Suggestions"/>
                     <ListBox ItemsSource="{Binding OnlineSuggestions}" Background="#1c1c1c" BorderThickness="1" BorderBrush="#FF2D2D2D">
                         <ListBox.ItemTemplate>
