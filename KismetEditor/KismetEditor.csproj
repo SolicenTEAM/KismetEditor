@@ -36,4 +36,44 @@
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="ZstdSharp.Port" Version="0.8.4" />
   </ItemGroup>
+  <PropertyGroup Condition="'$(PortableRelease)' == 'true'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <PublishTrimmed>false</PublishTrimmed>
+    <DebugType>embedded</DebugType>
+    <EmbedIoStoreBridge>true</EmbedIoStoreBridge>
+    <IoStoreBridgePath Condition="'$(IoStoreBridgePath)' == ''">$(MSBuildProjectDirectory)\..\Native\IoStoreBridge\target\x86_64-pc-windows-msvc\release\kisse_iostore.dll</IoStoreBridgePath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <EmbedIoStoreBridge Condition="'$(EmbedIoStoreBridge)' == ''">true</EmbedIoStoreBridge>
+    <IoStoreBridgePath Condition="'$(IoStoreBridgePath)' == ''">$(MSBuildProjectDirectory)\..\Native\IoStoreBridge\target\release\kisse_iostore.dll</IoStoreBridgePath>
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('$(IoStoreBridgePath)')">
+    <EmbeddedResource Include="$(IoStoreBridgePath)" LogicalName="Solicen.Native.kisse_iostore.dll" Condition="'$(EmbedIoStoreBridge)' == 'true'" />
+    <None Include="$(IoStoreBridgePath)" Link="kisse_iostore.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="'$(EmbedIoStoreBridge)' != 'true'" />
+    <None Include="..\ThirdParty\retoc\LICENSE" Link="licenses\retoc.LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="'$(PortableRelease)' != 'true'" />
+    <EmbeddedResource Include="..\ThirdParty\retoc\LICENSE" LogicalName="Solicen.Licenses.retoc.MIT" />
+    <EmbeddedResource Include="..\Native\oodle_loader\LICENSE-MIT" LogicalName="Solicen.Licenses.oodle_loader.MIT" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(OodleLibraryPath)' != '' And Exists('$(OodleLibraryPath)')">
+    <EmbeddedResource Include="$(OodleLibraryPath)" LogicalName="Solicen.Native.oo2core_9_win64.dll" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(VcRuntimeLibraryPath)' != '' And Exists('$(VcRuntimeLibraryPath)')">
+    <EmbeddedResource Include="$(VcRuntimeLibraryPath)" LogicalName="Solicen.Native.vcruntime140.dll" />
+  </ItemGroup>
+  <Target Name="ValidateIoStoreResources" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(PortableRelease)' == 'true' And ('$(RuntimeIdentifier)' != 'win-x64' Or '$(SelfContained)' != 'true' Or '$(PublishSingleFile)' != 'true' Or '$(IncludeNativeLibrariesForSelfExtract)' != 'true')" Text="PortableRelease requires self-contained single-file win-x64 publishing, including native libraries." />
+    <Error Condition="'$(PortableRelease)' == 'true' And !Exists('$(VcRuntimeLibraryPath)')" Text="PortableRelease requires VcRuntimeLibraryPath (x64 redistributable vcruntime140.dll). Use scripts/publish-portable.ps1." />
+    <Error Condition="'$(PortableRelease)' == 'true' And (!Exists('$(IoStoreBridgePath)') Or '$(EmbedIoStoreBridge)' != 'true')" Text="PortableRelease requires an embedded IoStore bridge. Use scripts/publish-portable.ps1." />
+    <Error Condition="'$(PortableRelease)' == 'true' And '$(OodleLibraryPath)' == ''" Text="PortableRelease requires OodleLibraryPath: supply an Oodle DLL that you are authorized to embed." />
+    <Warning Condition="'$(EmbedIoStoreBridge)' == 'true' And !Exists('$(IoStoreBridgePath)')" Text="IoStore bridge was not embedded: build Native/IoStoreBridge first. PAK and loose assets remain available." />
+    <Error Condition="'$(OodleLibraryPath)' != '' And !Exists('$(OodleLibraryPath)')" Text="OodleLibraryPath does not exist: $(OodleLibraryPath)" />
+  </Target>
+  <Target Name="CleanPortablePublishFiles" BeforeTargets="_ComputeFilesToBundle" Condition="'$(PortableRelease)' == 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.RelativePath)' == 'KissE.dll.config'" />
+    </ItemGroup>
+  </Target>
 </Project>

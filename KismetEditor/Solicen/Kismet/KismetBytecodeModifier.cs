@@ -110,8 +110,21 @@ namespace Solicen.Kismet
                     virtualPath = UnrealPath.VirtualFolderWithoutFileName(path).Replace("/","\\");
                 }
 
-                var folderPath = PackFolder.Contains("\\") ? PackFolder+$"\\{virtualPath}\\" : EnvironmentHelper.AssemblyDirectory + $"\\{PackFolder}\\{virtualPath}";
-                path = $"{folderPath}\\{fileName}";
+                string folderPath;
+                if (AssetLoader.IsVirtual)
+                {
+                    // Use the archive path, not FolderName (which may be None or /Game).
+                    var relative = Solicen.UE4.UnrealArchiveReader.NormalizePath(path);
+                    if (relative.Split('/').Any(part => part == ".." || part == "." || part.Contains(':')))
+                        throw new InvalidDataException("Unsafe virtual asset output path.");
+                    var outputRoot = Path.IsPathRooted(PackFolder) ? PackFolder : Path.Combine(EnvironmentHelper.AssemblyDirectory, PackFolder);
+                    folderPath = Path.Combine(outputRoot, Path.GetDirectoryName(relative) ?? string.Empty);
+                }
+                else
+                {
+                    folderPath = PackFolder.Contains("\\") ? PackFolder+$"\\{virtualPath}\\" : EnvironmentHelper.AssemblyDirectory + $"\\{PackFolder}\\{virtualPath}";
+                }
+                path = Path.Combine(folderPath, fileName);
                 Directory.CreateDirectory(folderPath);
             }
 

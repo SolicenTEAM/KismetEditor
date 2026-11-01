@@ -1,0 +1,3 @@
+[submodule "ThirdParty/retoc"]
+	path = ThirdParty/retoc
+	url = https://github.com/trumank/retoc

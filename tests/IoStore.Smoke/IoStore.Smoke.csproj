@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <!-- Like a test runner, this harness calls managed APIs, not the referenced apphost. -->
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../KismetEditor/KismetEditor.csproj" />
+    <Reference Include="UAssetAPI"><HintPath>../../KismetEditor/ThirdParty/UAssetAPI.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

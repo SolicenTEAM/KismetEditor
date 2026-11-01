@@ -85,7 +85,7 @@ namespace Solicen.CLI
             "\\ThirdParty\\", "\\Materials\\", "\\Terrain\\", "\\Effects\\", "\\FX\\",
             "Engine\\", "\\Physics\\", "\\Plugins\\", "\\Config\\", "\\Mannequin\\", "\\StarterContent\\",
             "\\Animations\\", "\\Scripting\\", "\\Materials\\", "\\Textures\\", "\\Sound\\", "\\AI\\"};
-        private static List<string> AllowedExtensionForAsset = new List<string>() { ".uasset", ".umap", ".pak" };
+        private static List<string> AllowedExtensionForAsset = new List<string>() { ".uasset", ".umap", ".pak", ".ucas", ".utoc" };
         private static readonly List<Argument> arguments;
 
         static CLIHandler()
@@ -116,8 +116,9 @@ namespace Solicen.CLI
                 new Argument("--pack-folder", "-pf", "Translate and pack assets into auto prepared folder (e.g., 'ManicMiners_RUS')", (folder) => { BytecodeModifier.PackIntoFolder = true; BytecodeModifier.PackFolder = folder; }),
                 new Argument("--version", "-v", "Set the engine version for correct processing (e.g., -v=5.1).", ProcessVersion),
                 new Argument("--run", "-r", "Execute a command in the terminal after completion (e.g., --run=[CommandArgs])", (cmd) => Config.RunCommand = cmd),
-                new Argument("--virtual", "-vir", "The provider switches to a virtual mode of reading assets instead of searching for them on the disk.", () => Config.Virtual = true),
-                new Argument("--aes", "-a", "32-character hex string as AES key", (key) => AssetLoader.AES = key),
+                new Argument("--virtual", "-vir", "Read .pak/.ucas/.utoc assets virtually, without extracting files to disk.", () => Config.Virtual = true),
+                new Argument("--no-oodle-download", "-noodle", "Disable automatic Oodle acquisition; use an embedded or external DLL only.", () => OodleLibrary.AllowDownload = false),
+                new Argument("--aes", "-a", "64 hex characters (32 bytes) as AES key", (key) => AssetLoader.AES = key),
 
                 new Argument("--all-directories", "-alldir", "Disables filter with specifed directory names for analyze and asset processing.", () => Config.AllDirectories = true),
                 new Argument("--namespace", "-ns", "Include namespace::value in output JSON", () => MapParser.IncludeNameSpace = true),
@@ -345,6 +346,30 @@ namespace Solicen.CLI
             return true;
         }
 
+        private static void WithVirtualArchive(string path, Action<UnrealArchiveReader> action)
+        {
+            bool createBak = BytecodeModifier.CreateBak;
+            bool packIntoFolder = BytecodeModifier.PackIntoFolder;
+            try
+            {
+                using var provider = new UnrealArchiveReader(path, AssetLoader.Version, AssetLoader.MappingsPath, AssetLoader.AES);
+                provider.NotAllowedPath = Config.AllDirectories ? Array.Empty<string>() : NotAllowedPath;
+                AssetLoader.SetProvider(provider);
+                try { action(provider); }
+                finally { AssetLoader.CloseProvider(); }
+            }
+            catch (Exception ex)
+            {
+                CLI.Console.WriteLine($"[Red][ERR] [White]Virtual archive operation failed: {ex.Message}");
+                Environment.ExitCode = 1;
+            }
+            finally
+            {
+                BytecodeModifier.CreateBak = createBak;
+                BytecodeModifier.PackIntoFolder = packIntoFolder;
+            }
+        }
+
         private static bool IsDataFile(string file)
         {
             if (string.IsNullOrWhiteSpace(file)) return false;
@@ -410,6 +435,20 @@ namespace Solicen.CLI
                     Argumentor.ShowHelp(arguments);
                     return;
                 }
+            }
+
+            // IoStore always requires an explicit opt-in to virtual archive reading.
+            if (!Config.Virtual && onlyArgs.Any(UnrealArchiveReader.IsIoStorePath))
+            {
+                CLI.Console.WriteLine("[Red][ERR] [White]Reading .ucas/.utoc requires [Cyan]--virtual[White]. Keep the matching .utoc/.ucas and global files together.");
+                Environment.ExitCode = 1;
+                return;
+            }
+            if (!Config.Virtual && onlyArgs.Length > 0 && string.Equals(Path.GetExtension(onlyArgs[0]), ".pak", StringComparison.OrdinalIgnoreCase))
+            {
+                CLI.Console.WriteLine("[Red][ERR] [White]Use [Cyan]--virtual[White] to extract strings from a PAK archive.");
+                Environment.ExitCode = 1;
+                return;
             }
 
             // 2. Применяем конфигурацию к другим модулям
@@ -515,7 +554,7 @@ namespace Solicen.CLI
                     if (Directory.Exists(targetPath))
                     {
                         CLI.Console.StartProgress("Counting assets for processing");
-                        var files = Directory.GetFiles(targetPath, "*", SearchOption.AllDirectories).Where(x => IsAsset(x)).ToArray();
+                        var files = Directory.GetFiles(targetPath, "*", SearchOption.AllDirectories).Where(x => IsAsset(x) && !UnrealArchiveReader.IsArchivePath(x)).ToArray();
                         var sortedFiles = files.Where(x => uberJSONCollection.Any(f => Path.GetFileNameWithoutExtension(f.FileName) == Path.GetFileNameWithoutExtension(x))).ToArray();
 
                         CLI.Console.StopProgress($"[DarkGray][INF] [White]Assets (.uasset|.umap) for replace found: {sortedFiles.Length} (total in folder: {files.Length})");
@@ -561,13 +600,12 @@ namespace Solicen.CLI
                         CLI.Console.Separator(64);
                         // В режиме single-asset assetFile может быть null если IsAsset фильтр не прошел из-за NotAllowedPath
                         if (assetFile == null) assetFile = targetPath;
-                        if (Path.GetExtension(assetFile) == ".pak")
+                        if (UnrealArchiveReader.IsArchivePath(assetFile))
                         {
                             // Модификация виртуальных ассетов
-                            using (var provider = new UnrealArchiveReader(assetFile, AssetLoader.Version, AssetLoader.MappingsPath, AssetLoader.AES))
+                            WithVirtualArchive(assetFile, provider =>
                             {
-                                var files = provider.GetAssets();       // Получаем список всех файлов в провайдере
-                                AssetLoader.SetProvider(provider);      // Загружаем провайдер в лоадер, для загрузки виртуальных файлов
+                                var files = provider.GetAssets();
                                 BytecodeModifier.CreateBak = false;     // Нет смысла создавать .bak если ассет виртуальный
                                 BytecodeModifier.PackIntoFolder = true; // Мы не можем паковать в .pak напрямую.
 
@@ -595,7 +633,7 @@ namespace Solicen.CLI
                                 }
                                 if (modified == 0)
                                     CLI.Console.WriteLine($"[Yellow][WARN] [White]No assets were modified. Check that JSON contains non-empty NewValue's.");
-                            }
+                            });
                         }
                         else
                         {
@@ -735,18 +773,12 @@ namespace Solicen.CLI
                             CLI.Console.WriteLine($"[DarkGray][INF] [White]Custom output: [Cyan]{customOutputJson}[White] -> [DarkGray]{displayPath}[White]");
 
                             // При виртуальном провайдере может быть только полное сканирование
-                            if (Config.Virtual)
+                            if (Config.Virtual && UnrealArchiveReader.IsArchivePath(assetFile))
                             {
-                                using (var provider = new UnrealArchiveReader(assetFile, AssetLoader.Version, AssetLoader.MappingsPath, AssetLoader.AES))
+                                WithVirtualArchive(assetFile, provider =>
                                 {
-                                    if (!Config.AllDirectories) 
-                                        provider.NotAllowedPath = NotAllowedPath;
-
-                                    var files = provider.GetAssets();
-
-                                    AssetLoader.SetProvider(provider);
-                                    BytecodeExtractor.ExtractAndWriteUJson(files, passedName);
-                                }
+                                    BytecodeExtractor.ExtractAndWriteUJson(provider.GetAssets(), passedName);
+                                });
                             }
                             else // Иначе это .uasset/.usmap на диске
                             {
@@ -759,18 +791,12 @@ namespace Solicen.CLI
                             UberJSONName = Path.GetFileNameWithoutExtension(assetFile);
 
                             // При виртуальном провайдере может быть только полное сканирование
-                            if (Config.Virtual)
+                            if (Config.Virtual && UnrealArchiveReader.IsArchivePath(assetFile))
                             {
-                                using (var provider = new UnrealArchiveReader(assetFile, AssetLoader.Version, AssetLoader.MappingsPath, AssetLoader.AES))
+                                WithVirtualArchive(assetFile, provider =>
                                 {
-                                    if (!Config.AllDirectories) 
-                                        provider.NotAllowedPath = NotAllowedPath;
-
-                                    var files = provider.GetAssets();
-
-                                    AssetLoader.SetProvider(provider);
-                                    BytecodeExtractor.ExtractAndWriteUJson(files, UberJSONName);
-                                }
+                                    BytecodeExtractor.ExtractAndWriteUJson(provider.GetAssets(), UberJSONName);
+                                });
                             }
                             else // Иначе это .uasset/.usmap на диске
                             {
@@ -781,7 +807,7 @@ namespace Solicen.CLI
                     if (isFolder)// Это папка
                     {
                         CLI.Console.StartProgress("Counting assets for processing");
-                        var files = Directory.GetFiles(onlyArgs[0], "*", SearchOption.AllDirectories).Where(x => IsAsset(x)).ToArray();
+                        var files = Directory.GetFiles(onlyArgs[0], "*", SearchOption.AllDirectories).Where(x => IsAsset(x) && !UnrealArchiveReader.IsArchivePath(x)).ToArray();
                         CLI.Console.StopProgress($"[DarkGray][INF] [White]Assets (.uasset|.umap) found: {files.Length}");
                         if (files.Length == 0)
                         {

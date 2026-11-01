@@ -9,3 +9,9 @@ packages
 *Publish*
 get_last_commits.bat
 git_commits.py
+
+# Native IoStore build products and local integration results
+Native/IoStoreBridge/target/
+Native/oodle_loader/target/
+artifacts/
+!scripts/publish-portable.ps1

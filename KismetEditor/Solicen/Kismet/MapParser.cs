@@ -38,7 +38,8 @@ namespace Solicen.Kismet
             if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 2) return true;
             if (IgnoreStringFilter) return false;
             return (
-                IsCodePart(value)
+                UnrealStringFilter.IsSystemString(value)
+                || IsCodePart(value)
                 || IsContainsUnderscore(value)
                 || value == "None"
                 || int.TryParse(value, out _)

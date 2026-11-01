@@ -12,6 +12,7 @@ namespace Solicen.JSON
     {
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string KeyValue = null;
+        public bool ShouldSerializeKeyValue() => !string.IsNullOrWhiteSpace(KeyValue);
 
         public string Original = "";
         public string NewValue = "";
@@ -129,7 +130,7 @@ namespace Solicen.JSON
         /// <returns></returns>
         public static UberJSON[] Merge(this UberJSON[] uberJSON, UberJSON[] otherJSON)
         {
-            if (uberJSON == null) return otherJSON;
+            if (uberJSON == null) return FilterUnrealSystemStrings(otherJSON);
             for (int i = 0; i < uberJSON.Length; i++)
             {
                 var c_values = uberJSON[i].Values;
@@ -169,7 +170,20 @@ namespace Solicen.JSON
                 _tempUber.AddRange(newUber); uberJSON = _tempUber.ToArray();
             }
 
-            return uberJSON;
+            return FilterUnrealSystemStrings(uberJSON);
+        }
+
+        private static UberJSON[] FilterUnrealSystemStrings(UberJSON[] entries)
+        {
+            if (entries == null || MapParser.IgnoreStringFilter) return entries;
+            var filtered = new List<UberJSON>();
+            foreach (var entry in entries)
+            {
+                int removed = entry.Values.RemoveAll(value => UnrealStringFilter.IsSystemString(value.Original));
+                // Drop blocks made empty by this cleanup, not unrelated pre-existing empty blocks.
+                if (removed == 0 || entry.Values.Count > 0) filtered.Add(entry);
+            }
+            return filtered.ToArray();
         }
 
         /// <summary>

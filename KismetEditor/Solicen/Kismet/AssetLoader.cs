@@ -20,21 +20,21 @@ namespace Solicen.Kismet
         public static void SetVersion(EngineVersion version) => Version = version;
 
         #region Virtual Provider Zone
-        public static bool IsVirtual => provider!=null? true: false;
+        public static bool IsVirtual => provider != null && !provider.IsClosed;
         private static UnrealArchiveReader provider = null;
         public static string FullPakPath = string.Empty;
 
         public static void CloseProvider()
         {
-            provider.Close();
+            var previous = provider;
             provider = null;
+            previous?.Close();
         }
         public static void SetProvider(UnrealArchiveReader _provider)
         {
-            if (provider == null && provider != _provider)
-            {
-                provider = _provider;
-            } 
+            if (ReferenceEquals(provider, _provider)) return;
+            CloseProvider();
+            provider = _provider;
         }
         #endregion
 
@@ -44,7 +44,9 @@ namespace Solicen.Kismet
             {
                 try
                 {
-                    return provider.FromGameFile(asset);
+                    var result = provider.FromGameFile(asset);
+                    ExceptionMessage = UnrealArchiveReader.ExceptionMessage;
+                    return result;
                 }
                 catch (Exception ex)
                 {

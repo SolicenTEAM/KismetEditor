@@ -1,0 +1,11 @@
+[package]
+name = "oodle_loader"
+version = "0.2.2"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/trumank/repak"
+publish = false
+
+[dependencies]
+libloading = "0.8"
+thiserror = "2.0.11"

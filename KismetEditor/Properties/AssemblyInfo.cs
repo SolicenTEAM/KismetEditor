@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 [assembly: AssemblyTrademark("Solicen")]
 [assembly: AssemblyCulture("")]
+[assembly: InternalsVisibleTo("KismetEditor.Tests")]
 
 // Установка значения False для параметра ComVisible делает типы в этой сборке невидимыми
 // для компонентов COM. Если необходимо обратиться к типу в этой сборке через
