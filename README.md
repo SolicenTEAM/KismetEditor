@@ -41,13 +41,13 @@ Made with ❤️ for **all** translators and translation developers.
 Read `.pak`, `.ucas` or `.utoc` assets without unpacking the archive:
 
 ```bash
-KissE.exe "C:\Game\Content\Paks\Game-WindowsNoEditor.ucas" "C:\Output\strings.json" --virtual --version=4.27
+kisse "C:\Game\Content\Paks\Game-WindowsNoEditor.ucas "strings.json" -vir -v 4.27
 ```
 
 Replacement uses the same virtual provider:
 
 ```bash
-KissE.exe "C:\Output\strings.json" "C:\Game\Content\Paks\Game-WindowsNoEditor.ucas" --virtual --version=4.27 --pack-folder=MyMod
+kisse "strings.json" "Paks\Game-WindowsNoEditor.ucas" -vir -v 4.27 --pack-folder=MyMod
 ```
 
 Modified assets are written as separate legacy files under the output folder. **The source UCAS is never modified; repacking IoStore is not included.**

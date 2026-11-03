@@ -1,4 +1,9 @@
-# How to build portable single-executable
+# How to build project
+
+This file briefly describes the necessary components for the assembly and testing of all program functions, including the import of third-party libraries for IoStore.
+
+----------------------------------------------------------------
+
 ## Compilation
 ### Requirements
 - Visual Studio 2026

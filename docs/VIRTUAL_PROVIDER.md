@@ -1,4 +1,12 @@
-IoStore requires `--virtual`, the matching `.utoc` and `.ucas`, and the game's `global.utoc/global.ucas` for UE4 script imports. Keep sibling containers together for dependency resolution. Only files from the selected container are exposed. Use the actual game engine version, `--mapping=Game.usmap` for unversioned properties when needed, and `--aes=<64 hex characters>` for encrypted containers.
+# What is a virtual provider?
+
+This file briefly describes the function of the virtual provider and its work with the ucas/utoc files of Unreal Engine 4-5.
+
+----------------------------------------------------------------
+
+IoStore requires `--virtual`, the matching `.utoc` and `.ucas`, and the game's `global.utoc/global.ucas` for UE4 script imports. 
+
+Keep sibling containers together for dependency resolution. Only files from the selected container are exposed. Use the actual game engine version, `--mapping=Game.usmap` for unversioned properties when needed, and `--aes=<64 hex characters>` for encrypted containers.
 
 The IoStore backend uses [retoc v0.1.5](https://github.com/trumank/retoc/releases/tag/v0.1.5) (MIT) to convert Zen packages to legacy `.uasset/.uexp` **in memory**, then parses them with the existing UAssetAPI. No temporary PAK or unpacked asset tree is created. Compatibility is limited to the formats supported by that retoc revision (engine versions 4.25–5.7); game-specific formats and assets may require mappings or remain unsupported.
 
