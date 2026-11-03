@@ -709,6 +709,7 @@ dependencies = [
  "anyhow",
  "clap",
  "oodle_loader",
+ "repak",
  "retoc",
  "serde_json",
  "typed-path",

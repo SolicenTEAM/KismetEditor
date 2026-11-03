@@ -41,16 +41,36 @@
 Чтение `.pak`, `.ucas` и `.utoc` без распаковки на диск:
 
 ```bash
-kisse "C:\Game\Content\Paks\Game-WindowsNoEditor.ucas "strings.json" -vir -v 4.27
+kisse "Paks\Game-WindowsNoEditor.ucas" "strings.json" -vir -v 4.27
 ```
 
 Замена строк использует тот же провайдер:
 
 ```bash
-kisse "strings.json" "Paks\Game-WindowsNoEditor.ucas" -vir -v 4.27 --pack-folder=MyMod
+kisse "strings.json" "Paks\Game-WindowsNoEditor.ucas" -vir -v 4.27 --pack-folder="MyMod"
 ```
 
-Результат — отдельные legacy-ассеты в выходной папке. **Исходный UCAS не изменяется; обратная упаковка в IoStore в эту функцию не входит.**
+Результат — отдельные legacy-ассеты в выходной папке. **Исходные архивы не изменяются.**
+
+### Создание модов PAK / IoStore
+
+Упаковка готовой cooked-папки мода; сохраните внутренние пути вида `<Game>/Content/UI/Menu.uasset`:
+
+```bash
+kisse "MyMod" -pack="C:\Mods\Russian_P.pak" -v 4.27
+```
+
+Для IoStore укажите `.utoc`: одноимённые `.ucas` и сопутствующий `.pak` создаются автоматически:
+
+```bash
+kisse "MyMod" -pack="C:\Mods\Russian_P.utoc" -v 4.27
+```
+
+Применение JSON/CSV-перевода и немедленная сборка мода из обработанных ассетов:
+
+```bash
+kisse "strings.ru.json" "Paks\Game.ucas" -vir -v 4.27 -all -pack="C:\Mods\Game_P.utoc"
+```
 
 ### Основные аргументы:
 | Аргумент | Сокращение | Описание |
@@ -69,6 +89,7 @@ kisse "strings.json" "Paks\Game-WindowsNoEditor.ucas" -vir -v 4.27 --pack-folder
 | `--patch-all-functions` | `-paf` | Применяет пайплайн замены байткода ко всем UFunction с ScriptBytecode (не только ExecuteUbergraph_*). Нужно для обработчиков виджетов и других функций, хранящих EX_StringConst вне уберграфа. |
 | `--patch-assignments` | `-pa` | Также заменять EX_StringConst внутри AssignmentExpression в уберграфе (выключено по умолчанию, чтобы не трогать технические пути/ключи; включайте для игрового текста, заданного через ноды 'Set Text' / 'Print String'). |
 | `--only-key` | `-tok` | Если ключ/имя совпадает, включать только это значение в вывод (например, --table:only:key=ENG). |
+| `--pack` | `-pack` | Создать новый `.pak` или `.utoc/.ucas/.pak` из cooked-папки либо после замены JSON/CSV; требует `--version`. |
 | `--pack-folder` | `-pf` | Перевести и упаковать ассеты в автоматически подготовленную папку (например, "ManicMiners_RUS"). |
 | `--version` | `-v` | Установить версию движка для корректной обработки (например, -v=5.1). |
 | `--run` | `-r` | Выполнить команду в терминале после завершения (например, --run=[CommandArgs]). |

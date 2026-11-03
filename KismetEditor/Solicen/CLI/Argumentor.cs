@@ -13,6 +13,7 @@ namespace Solicen.CLI
     /// </summary>
     public static class Argumentor
     {
+        public static bool HadErrors { get; private set; }
         #region Расширенное управление терминалом
         public static void RunTerminal(string command)
         {
@@ -226,6 +227,7 @@ namespace Solicen.CLI
         /// </summary>
         public static string[] Process(string[] args, List<Argument> definedArguments)
         {
+            HadErrors = false;
             var remainingArgs = new List<string>();
             if (definedArguments == null) definedArguments = new List<Argument>();
             if (args == null || args.Length == 0)
@@ -566,6 +568,7 @@ namespace Solicen.CLI
                 CLI.Console.WriteLine($"[DarkGray]Tip: Use [White]--help[DarkGray] ([White]-h[DarkGray]) to see usage and examples.\n[White]");
             }
 
+            HadErrors = hasAnyError;
             return remainingArgs.ToArray();
         }
 
@@ -589,6 +592,10 @@ namespace Solicen.CLI
             CLI.Console.WriteLine("    [Cyan]KissE.exe [White]<asset_or_folder> [White][options][White]");
             CLI.Console.WriteLine("    [DarkGray]Example: [Cyan]KissE.exe \"C:\\Game\\Content\\Paks\\MyAsset.uasset\" -sc[White]");
             CLI.Console.WriteLine("    [DarkGray]Example: [Cyan]KissE.exe \"C:\\Game\\Content\" --alltypes --all-directories[White]");
+            CLI.Console.WriteLine("");
+            CLI.Console.WriteLine("  [White]Create archive [DarkGray](cooked folder -> PAK / IoStore):[White]");
+            CLI.Console.WriteLine("    [Cyan]KissE.exe [White]<mod_root> --pack=<output.pak|output.utoc> --version=4.27[White]");
+            CLI.Console.WriteLine("    [DarkGray]Add --pack=<output> to JSON/CSV replacement to build the mod immediately. Existing outputs are never overwritten.[White]");
             CLI.Console.WriteLine("");
             CLI.Console.WriteLine("  [White]Pack [DarkGray](JSON/CSV -> Asset/Folder):[White]");
             CLI.Console.WriteLine("    [Cyan]KissE.exe [White]<json_or_csv> <asset_or_folder> [White][options][White]");

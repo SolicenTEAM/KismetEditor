@@ -24,7 +24,7 @@ namespace Solicen.Kismet
             return replacement.Where(x => !MapParser.IsCodePart(x.Key)).ToDictionary();
         }
 
-        public static void ModifyAsset(string path, Dictionary<string, string> replacement, bool allowTable = false)
+        public static string ModifyAsset(string path, Dictionary<string, string> replacement, bool allowTable = false, string outputPath = null)
         {
             JObject jsonObject = null;
             var json = string.Empty;
@@ -49,14 +49,14 @@ namespace Solicen.Kismet
             {
                 // Загружаем uasset файл с помощью UAssetAPI
                 Asset = AssetLoader.LoadAsset(path);
-                if (Asset == null) return;
+                if (Asset == null) return null;
                 json = Asset.SerializeJson(Formatting.Indented);
                 jsonObject = JObject.Parse(json);
             }
             catch
             {
                 CLI.Console.WriteLine($"[Red][ERR] [White]Failed to load asset. The wrong engine version maybe assigned.");
-                return;
+                return null;
             }
 
 
@@ -90,11 +90,18 @@ namespace Solicen.Kismet
             {
                 var _json = Asset.SerializeJson(Formatting.Indented);
                 // Сохраняем итоговый JSON в файл для ручной проверки
-                File.WriteAllText($"{Environment.CurrentDirectory}\\Ubergraph.json", _json);
-                Console.WriteLine($"[INF] The modified JSON is saved in: {Environment.CurrentDirectory}\\Ubergraph.json");
+                string debugPath = outputPath == null ? Path.Combine(Environment.CurrentDirectory, "Ubergraph.json") : outputPath + ".json";
+                Directory.CreateDirectory(Path.GetDirectoryName(debugPath));
+                File.WriteAllText(debugPath, _json);
+                Console.WriteLine($"[INF] The modified JSON is saved in: {debugPath}");
             }
 
-            if (PackIntoFolder)
+            if (outputPath != null)
+            {
+                path = outputPath;
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+            }
+            else if (PackIntoFolder)
             {
                 var fileName = Path.GetFileName(path);
                 var virtualPath = Asset.FolderName != null ? Asset.FolderName.Value.Replace("/Game/", "/Game/Content/").Replace("/","\\"): "";
@@ -140,6 +147,7 @@ namespace Solicen.Kismet
             #endregion
             Asset.Write(path);
             Solicen.CLI.Console.StopProgress($"[Green][SUCCESS] [White]...{Path.GetFileName(path)}");
+            return path;
 
         }
     }

@@ -69,6 +69,12 @@ namespace Solicen.UE4
             return backend.ReadFile(path, MaxAssetBytes);
         }
 
+        internal ArchiveAssetData ReadAssetData(string path)
+        {
+            ObjectDisposedException.ThrowIf(IsClosed, this);
+            return backend.ReadAsset(path, false, MaxAssetBytes);
+        }
+
         public UAsset FromGameFile(string assetPath)
         {
             ExceptionMessage = string.Empty;

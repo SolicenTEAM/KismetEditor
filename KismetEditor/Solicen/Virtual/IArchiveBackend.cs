@@ -7,6 +7,8 @@ namespace Solicen.UE4
         public byte[] Header;
         public byte[] Exports;
         public byte[] Bulk;
+        public byte[] OptionalBulk;
+        public byte[] MappedBulk;
     }
 
     internal interface IArchiveBackend : IDisposable

@@ -29,6 +29,8 @@ namespace Solicen.CLI
             public static bool Heuristics = false;
             public static bool Virtual = false;
             public static bool DebugMode = false;
+            public static string PackOutput = null;
+            public static bool VersionSpecified = false;
 
             #region Fallback Localization
             /// <summary>
@@ -113,6 +115,7 @@ namespace Solicen.CLI
                 new Argument("--translate", "-tr", "Automatically translate strings using an online translator.", () => Config.EnableAutoTranslate = true),
                 new Argument("--patch-all-functions", "-paf", "Iterate the bytecode-replacement pipeline over every UFunction with a ScriptBytecode (not just ExecuteUbergraph_*). Needed for widget event handlers and other functions that hold their EX_StringConst outside the ubergraph.", () => Config.PatchAllFunctions = true),
                 new Argument("--patch-assignments", "-pa", "Also replace EX_StringConst inside an AssignmentExpression in the ubergraph (off by default; opt-in for game text hardcoded via 'Set Text' / 'Print String' Blueprint nodes).", () => Config.PatchAssignments = true),
+                new Argument("--pack", "-pack", "Create a .pak or .utoc/.ucas/.pak mod from a cooked folder or after replacement; requires --version. Existing outputs are never overwritten.", (path) => Config.PackOutput = path),
                 new Argument("--pack-folder", "-pf", "Translate and pack assets into auto prepared folder (e.g., 'ManicMiners_RUS')", (folder) => { BytecodeModifier.PackIntoFolder = true; BytecodeModifier.PackFolder = folder; }),
                 new Argument("--version", "-v", "Set the engine version for correct processing (e.g., -v=5.1).", ProcessVersion),
                 new Argument("--run", "-r", "Execute a command in the terminal after completion (e.g., --run=[CommandArgs])", (cmd) => Config.RunCommand = cmd),
@@ -391,6 +394,8 @@ namespace Solicen.CLI
         public static void ProcessProgram(string[] args)
         { 
             // 1. Разбираем аргументы и настраиваем конфигурацию
+            Config.PackOutput = null;
+            Config.VersionSpecified = false;
             var originalArgs = Argumentor.SplitArgs(args);
             var onlyArgs = Argumentor.Process(originalArgs, arguments);
 
@@ -402,6 +407,19 @@ namespace Solicen.CLI
             if (helpRequested && onlyArgs.Length == 0)
             {
                 // Дополнительно показать подсказку по использованию если только хелп
+                return;
+            }
+
+            bool packRequested = originalArgs.Any(a => arguments.First(x => x.Key == "--pack").Matches(a));
+            if (packRequested && (Argumentor.HadErrors || string.IsNullOrWhiteSpace(Config.PackOutput)))
+            {
+                Environment.ExitCode = 1;
+                return;
+            }
+            if (packRequested && onlyArgs.Length == 0)
+            {
+                CLI.Console.WriteLine("[Red][ERR] --pack requires an input folder, or a JSON/CSV and a replacement source.");
+                Environment.ExitCode = 1;
                 return;
             }
 
@@ -462,6 +480,12 @@ namespace Solicen.CLI
             MapParser.AllowUnderscore = Config.AllowUnderscore;
             MapParser.AllowLocalizedSource = Config.AllowLocalizedSource;
             MapParser.IgnoreStringFilter = Config.IgnoreStringFilter;
+
+            if (packRequested)
+            {
+                ProcessArchivePack(onlyArgs);
+                return;
+            }
 
             var UberJSONName = string.Empty;
 
@@ -904,6 +928,7 @@ namespace Solicen.CLI
         /// </summary>
         private static void ProcessVersion(string version)
         {
+            Config.VersionSpecified = false;
             if (string.IsNullOrWhiteSpace(version))
             {
                 CLI.Console.WriteLine($"[Red][ERR] [White]--version requires a value. Example: [Cyan]-v=5.1[White] or [Cyan]--version=4.27[White]");
@@ -967,6 +992,7 @@ namespace Solicen.CLI
             }
 
             Config.Version = engineVersion;
+            Config.VersionSpecified = true;
             // Инфо выводится в Argumentor после успешного парса (для консистентности)
         }
     }

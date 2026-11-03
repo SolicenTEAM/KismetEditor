@@ -41,17 +41,36 @@ Made with ❤️ for **all** translators and translation developers.
 Read `.pak`, `.ucas` or `.utoc` assets without unpacking the archive:
 
 ```bash
-kisse "C:\Game\Content\Paks\Game-WindowsNoEditor.ucas "strings.json" -vir -v 4.27
+kisse "Paks\Game-WindowsNoEditor.ucas" "strings.json" -vir -v 4.27
 ```
 
 Replacement uses the same virtual provider:
 
 ```bash
-kisse "strings.json" "Paks\Game-WindowsNoEditor.ucas" -vir -v 4.27 --pack-folder=MyMod
+kisse "strings.json" "Paks\Game-WindowsNoEditor.ucas" -vir -v 4.27 --pack-folder="MyMod"
 ```
 
-Modified assets are written as separate legacy files under the output folder. **The source UCAS is never modified; repacking IoStore is not included.**
+Modified assets are written as separate legacy files under the output folder. **Source archives are never modified.** 
 
+### Creating PAK / IoStore mods
+
+Pack an existing cooked mod root (preserve paths such as `<Game>/Content/UI/Menu.uasset`):
+
+```bash
+kisse "MyMod" -pack="C:\Mods\Game_P.pak" -v 4.27
+```
+
+For IoStore, use a `.utoc` output; the matching `.ucas` and companion `.pak` are created automatically:
+
+```bash
+kisse "MyMod" -pack="C:\Mods\Game_P.utoc" -v 4.27
+```
+
+Apply JSON/CSV translations and immediately build a mod from the processed assets:
+
+```bash
+kisse "strings.ru.json" "Paks\Game.ucas" -vir -v 4.27 -all -pack="C:\Mods\Game_P.utoc"
+```
 
 ### Main arguments:
 | Argument | Short | Description |
@@ -71,6 +90,7 @@ Modified assets are written as separate legacy files under the output folder. **
   | `--patch-all-functions` | `-paf` | Iterate the bytecode-replacement pipeline over every UFunction with a ScriptBytecode (not just ExecuteUbergraph_*). Needed for widget event handlers and other functions that hold their (EX_StringConst) outside the ubergraph.
   | `--patch-assignments` | `-pa` | Also replace (EX_StringConst) inside an AssignmentExpression in the ubergraph (off by default to avoid touching technical paths/keys; opt-in for game text hardcoded via 'Set Text' / 'Print String' Blueprint nodes).
   | `--only-key` | `-tok` | If key/name matches then include only this value to output (e.g., -tok=ENG)
+| `--pack` | `-pack` | Create a new `.pak` or `.utoc/.ucas/.pak` mod from a cooked folder or after JSON/CSV replacement; requires `--version`. |
   | `--pack-folder` | `-pf` | Translate and pack assets into auto prepared folder (e.g., "ManicMiners_RUS")
   | `--version` | `-v` | Set the engine version for correct processing (e.g., -v=5.1)
   | `--run` | `-r` | Execute a command in the terminal after completion (e.g., --run=[CommandArgs])

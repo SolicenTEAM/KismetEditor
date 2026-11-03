@@ -35,9 +35,7 @@ namespace Solicen.UE4
                 if (status == 2)
                 {
                     Native.Free(error);
-                    string oodle = OodleLibrary.EnsureAvailable();
-                    NativeLibraryResources.EnsureOodleRuntimeAvailable();
-                    Check(Native.SetOodle(oodle, out error), error);
+                    InitializeOodle();
                     status = Native.Open(toc, aes ?? string.Empty, version.ToString().Replace("VER_", ""), out raw, out error);
                 }
                 Check(status, error);
@@ -65,6 +63,26 @@ namespace Solicen.UE4
             }
         }
 
+        private static void InitializeOodle()
+        {
+            string oodle = OodleLibrary.EnsureAvailable();
+            NativeLibraryResources.EnsureOodleRuntimeAvailable();
+            Check(Native.SetOodle(oodle, out var error), error);
+        }
+
+        internal static void Pack(string root, string manifest, string output, EngineVersion version)
+        {
+            string engine = version.ToString().Replace("VER_", "");
+            int status = Native.Pack(root, manifest, output, engine, out var error);
+            if (status == 2)
+            {
+                Native.Free(error);
+                InitializeOodle();
+                status = Native.Pack(root, manifest, output, engine, out error);
+            }
+            Check(status, error);
+        }
+
         public ArchiveAssetData ReadAsset(string path, bool skipBulk, long maxBytes)
         {
             ThrowIfClosed();
@@ -72,13 +90,21 @@ namespace Solicen.UE4
             Check(Native.ReadAsset(handle, actual, skipBulk ? 1 : 0, Limit(maxBytes), out var data, out var error), error);
             try
             {
-                return new ArchiveAssetData { Header = Copy(data.Header), Exports = Copy(data.Exports), Bulk = skipBulk ? null : Copy(data.Bulk) };
+                return new ArchiveAssetData
+                {
+                    Header = Copy(data.Header), Exports = Copy(data.Exports),
+                    Bulk = skipBulk || data.Bulk.Length == UIntPtr.Zero ? null : Copy(data.Bulk),
+                    OptionalBulk = skipBulk || data.OptionalBulk.Length == UIntPtr.Zero ? null : Copy(data.OptionalBulk),
+                    MappedBulk = skipBulk || data.MappedBulk.Length == UIntPtr.Zero ? null : Copy(data.MappedBulk)
+                };
             }
             finally
             {
                 Native.Free(data.Header);
                 Native.Free(data.Exports);
                 Native.Free(data.Bulk);
+                Native.Free(data.OptionalBulk);
+                Native.Free(data.MappedBulk);
             }
         }
 
@@ -132,6 +158,8 @@ namespace Solicen.UE4
             public NativeBuffer Header;
             public NativeBuffer Exports;
             public NativeBuffer Bulk;
+            public NativeBuffer OptionalBulk;
+            public NativeBuffer MappedBulk;
         }
         private sealed class IoStoreHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
@@ -145,6 +173,10 @@ namespace Solicen.UE4
         private static class Native
         {
             private const string Library = "kisse_iostore";
+            [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32)]
+            [DllImport(Library, EntryPoint = "kisse_io_pack", CallingConvention = CallingConvention.Cdecl)]
+            public static extern int Pack([MarshalAs(UnmanagedType.LPUTF8Str)] string root, [MarshalAs(UnmanagedType.LPUTF8Str)] string manifest,
+                [MarshalAs(UnmanagedType.LPUTF8Str)] string output, [MarshalAs(UnmanagedType.LPUTF8Str)] string version, out NativeBuffer error);
             [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32)]
             [DllImport(Library, EntryPoint = "kisse_io_set_oodle", CallingConvention = CallingConvention.Cdecl)]
             public static extern int SetOodle([MarshalAs(UnmanagedType.LPUTF8Str)] string path, out NativeBuffer error);

@@ -1,3 +1,5 @@
+mod packing;
+
 use anyhow::{Context, Result, ensure};
 use clap::ValueEnum;
 use retoc::{
@@ -47,6 +49,8 @@ pub struct AssetBuffers {
     header: Buffer,
     exports: Buffer,
     bulk: Buffer,
+    optional_bulk: Buffer,
+    mapped_bulk: Buffer,
 }
 
 #[derive(Debug)]
@@ -294,6 +298,8 @@ impl Archive {
             header: Buffer::from_vec(header),
             exports: Buffer::from_vec(exports),
             bulk: Buffer::from_vec(files.remove("asset.ubulk").unwrap_or_default()),
+            optional_bulk: Buffer::from_vec(files.remove("asset.uptnl").unwrap_or_default()),
+            mapped_bulk: Buffer::from_vec(files.remove("asset.m.ubulk").unwrap_or_default()),
         })
     }
 }
@@ -333,6 +339,24 @@ fn boundary(error: *mut Buffer, action: impl FnOnce() -> Result<()>) -> i32 {
         }
     }
     status
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn kisse_io_pack(
+    root: *const c_char,
+    manifest: *const c_char,
+    output: *const c_char,
+    version: *const c_char,
+    error: *mut Buffer,
+) -> i32 {
+    boundary(error, || {
+        packing::pack(
+            Path::new(unsafe { text(root)? }),
+            unsafe { text(manifest)? },
+            Path::new(unsafe { text(output)? }),
+            unsafe { text(version)? },
+        )
+    })
 }
 
 #[unsafe(no_mangle)]

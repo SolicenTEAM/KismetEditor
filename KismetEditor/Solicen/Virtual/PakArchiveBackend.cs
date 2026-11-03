@@ -56,7 +56,9 @@ namespace Solicen.UE4
             {
                 Header = header,
                 Exports = exports,
-                Bulk = skipBulk ? null : ReadFile(Path.ChangeExtension(path, "ubulk"), 0)
+                Bulk = skipBulk ? null : ReadFile(Path.ChangeExtension(path, "ubulk"), maxBytes),
+                OptionalBulk = skipBulk ? null : ReadFile(Path.ChangeExtension(path, "uptnl"), maxBytes),
+                MappedBulk = skipBulk ? null : ReadFile(Path.ChangeExtension(path, "m.ubulk"), maxBytes)
             };
         }
 
